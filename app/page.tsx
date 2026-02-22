@@ -1,66 +1,57 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
 
-export default function Home() {
+import { useGameState } from '@/hooks/useGameState';
+import { Onboarding } from '@/components/Onboarding';
+import { CinematicOpening } from '@/components/CinematicOpening';
+import { Game } from '@/components/Game';
+import { Endgame } from '@/components/Endgame';
+
+export default function Page() {
+  const {
+    screen, companyName, firstChoice, endData, hydrated,
+    setScreen, setCompanyName, setFirstChoice, setEndData, reset,
+  } = useGameState();
+
+  if (!hydrated) {
+    return <div style={{ background: '#0a0a0f', minHeight: '100vh' }} />;
+  }
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div style={{ background: '#0a0a0f', minHeight: '100vh' }}>
+      {screen === 'onboarding' && (
+        <Onboarding onStart={() => setScreen('cinema')} />
+      )}
+
+      {screen === 'cinema' && (
+        <CinematicOpening onComplete={(name, choice) => {
+          setCompanyName(name);
+          setFirstChoice(choice);
+          setScreen('game');
+        }} />
+      )}
+
+      {screen === 'game' && (
+        <Game
+          companyName={companyName}
+          firstChoice={firstChoice}
+          onEnd={(ending, arr, dims, decisions, weekLog) => {
+            setEndData({ ending, arr, dims, decisions, weekLog });
+            setScreen('endgame');
+          }}
         />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
+
+      {screen === 'endgame' && endData && (
+        <Endgame
+          ending={endData.ending}
+          arr={endData.arr}
+          dims={endData.dims}
+          decisions={endData.decisions}
+          weekLog={endData.weekLog}
+          companyName={companyName}
+          onPlayAgain={reset}
+        />
+      )}
     </div>
   );
 }
