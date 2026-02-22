@@ -30,7 +30,7 @@ export function DimBar({ label, value }: DimBarProps) {
         fontFamily: FONTS.mono,
         letterSpacing: "1.5px",
         textTransform: "uppercase",
-        width: 72,
+        width: 60,
         flexShrink: 0,
       }}>{label}</span>
 

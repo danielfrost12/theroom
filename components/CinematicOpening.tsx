@@ -11,6 +11,7 @@ interface CinematicOpeningProps {
 export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
   const [phase, setPhase] = useState(0);
   const [typed, setTyped] = useState("");
+  const [typingDone, setTypingDone] = useState(false);
   const [choiceMade, setChoiceMade] = useState<string | null>(null);
   const [showNameInput, setShowNameInput] = useState(false);
   const [companyName, setCompanyName] = useState("");
@@ -24,14 +25,14 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
       setTimeout(() => setPhase(2), 1500),   // Ambient text
       setTimeout(() => setPhase(3), 3000),   // Notification 1
       setTimeout(() => setPhase(4), 4200),   // Notification 2
-      setTimeout(() => setPhase(5), 5200),   // Open laptop
+      setTimeout(() => setPhase(5), 5500),   // Open laptop
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  // Typing effect for Slack message
+  // Typing effect for Slack message — runs once when phase hits 6
   useEffect(() => {
-    if (phase < 6) return;
+    if (phase !== 6) return;
     let idx = 0;
     const interval = setInterval(() => {
       if (idx < slackMsg.length) {
@@ -39,15 +40,16 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
         idx++;
       } else {
         clearInterval(interval);
-        setTimeout(() => setPhase(7), 800);
+        setTypingDone(true);
       }
     }, 18);
     return () => clearInterval(interval);
-  }, [phase, slackMsg]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   const handleChoice = (choice: string) => {
     setChoiceMade(choice);
-    setTimeout(() => setShowNameInput(true), 4500);
+    setTimeout(() => setShowNameInput(true), 2500);
   };
 
   const handleStart = () => {
@@ -139,9 +141,9 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
             maxWidth: 380,
             width: "100%",
           }}>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>Wire Transfer</div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>Sequoia Capital</div>
             <div style={{ fontSize: 15, color: "rgba(255,255,255,0.85)" }}>
-              <strong>David Chen</strong>, Sequoia Capital, wired <strong>$2,500,000</strong> to your account.
+              <strong>David Chen</strong> wired $2.5M. Attached: <span style={{ color: "rgba(255,255,255,0.5)" }}>12-month milestone targets.pdf</span>
             </div>
           </div>
         )}
@@ -211,15 +213,15 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                 minHeight: 80,
               }}>
                 {typed}
-                {phase === 6 && typed.length < slackMsg.length && (
+                {!typingDone && (
                   <span style={{ opacity: 0.5, animation: "blink 1s infinite" }}>|</span>
                 )}
               </div>
             </div>
 
-            {/* Phase 7: Binary tension */}
-            {phase >= 7 && (
-              <div style={{ animation: "fadeUp 0.6s ease" }}>
+            {/* Choices — appear after typing finishes */}
+            {typingDone && (
+              <div style={{ opacity: 0, animation: "fadeUp 0.6s ease 0.6s forwards" }}>
                 <div style={{
                   display: "flex", gap: 12, justifyContent: "center",
                 }}>

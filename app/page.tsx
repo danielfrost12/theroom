@@ -72,7 +72,19 @@ export default function Page() {
   }, [screen, fading]);
 
   if (!hydrated) {
-    return <div style={{ background: '#0a0a0f', minHeight: '100vh' }} />;
+    return (
+      <div style={{
+        background: '#0a0a0f', minHeight: '100vh',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <div style={{
+          width: 24, height: 2,
+          background: 'rgba(255,255,255,0.08)',
+          borderRadius: 1,
+          animation: 'pulse 2s ease infinite',
+        }} />
+      </div>
+    );
   }
 
   return (

@@ -570,9 +570,9 @@ export const TEMPO = {
   silence: 1800,         // blank screen after heavy choices
   breathe: 2200,         // breathing moment display
   consequenceDelay: 600, // pause before consequence tensions
-  fadeOut: 400,          // screen transition fade out
-  fadeIn: 300,           // screen transition fade in
-  holdBlack: 200,        // hold on black between screens
+  fadeOut: 300,          // screen transition fade out
+  fadeIn: 250,           // screen transition fade in
+  holdBlack: 150,        // hold on black between screens
   choiceReveal: 800,     // delay before choices appear (default)
   choiceRevealHigh: 1800,// delay for high-stakes
   choiceRevealCrit: 2500,// delay for critical / consequence
@@ -581,11 +581,11 @@ export const TEMPO = {
   criticalSpeed: 35,     // typewriter for critical stakes
   fastNarrative: 15,     // typewriter for short text
   narrativeTapDelay: 1500,// delay before showing "tap to continue"
-  milestoneDisplay: 3500,// how long milestone stays
-  surpriseDisplay: 3000, // how long surprise event stays
-  surpriseResolve: 2500, // delay after surprise before next tension
-  compressDisplay: 3000, // time compression animation
-  endingDelay: 4000,     // delay before transitioning to endgame
+  milestoneDisplay: 2200,// how long milestone stays (inline, not blocking)
+  surpriseDisplay: 2500, // how long surprise event stays
+  surpriseResolve: 2000, // delay after surprise before next tension
+  compressDisplay: 2200, // time compression animation
+  endingDelay: 3000,     // delay before transitioning to endgame
   forcedChoiceDelay: 2000,// auto-select delay for forced choices
 };
 

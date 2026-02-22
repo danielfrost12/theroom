@@ -203,11 +203,17 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       if (shadow) setForeshadow(shadow);
     }
 
-    // Apply effects with momentum dampening
+    // Apply effects with momentum dampening + honeymoon protection
     const newDims = { ...dims };
+    const currentAct = getAct(week);
     if (!isCustom) {
       (Object.keys(effects) as (keyof GameDimensions)[]).forEach(k => {
         let delta = effects[k] || 0;
+        // Honeymoon protection: negative effects are softened in Act 1
+        if (delta < 0 && currentAct === 1) {
+          delta = Math.ceil(delta * 0.6);
+        }
+        // Momentum dampening: protect dimensions that are already low
         if (delta < 0 && newDims[k] < 30) {
           delta = Math.ceil(delta * 0.5);
         } else if (delta < 0 && newDims[k] < 45) {
@@ -304,7 +310,12 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       choice, newDims, week, companyName
     );
 
-    setNarrative(narrativeText);
+    // Enforce narrative brevity — truncate to 3 sentences max, 60 words max
+    const sentences = narrativeText.match(/[^.!?]+[.!?]+/g) || [narrativeText];
+    let truncated = sentences.slice(0, 3).join(' ').trim();
+    const words = truncated.split(/\s+/);
+    if (words.length > 60) truncated = words.slice(0, 60).join(' ') + '.';
+    setNarrative(truncated);
     setShowBreathing(false);
     setLoading(false);
     setWeek(newWeek);
@@ -370,8 +381,9 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       };
     }
 
-    // Show "tap to continue" after brief pause
-    addTimeout(() => setWaitingForTap(true), 800);
+    // Show "tap to continue" after reading pause — longer for consequences
+    const readDelay = isConsequence ? 2200 : 1500;
+    addTimeout(() => setWaitingForTap(true), readDelay);
   };
 
   const handleContinue = () => {
@@ -398,7 +410,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       }}>
 
         {/* Dashboard — always visible except during full-screen overlays */}
-        {!compressing && !surpriseEvent && !milestone && (
+        {!compressing && !surpriseEvent && (
           <div style={{
             background: "rgba(255,255,255,0.03)",
             borderRadius: 20,
@@ -437,7 +449,11 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                 <div style={{
                   fontSize: 18, fontWeight: 700, color: "#fff",
                   fontFamily: FONTS.mono,
-                }}>${arr}M <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>ARR</span></div>
+                }}>{arr === 0 ? (
+                  <span style={{ fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.35)" }}>Pre-revenue</span>
+                ) : (
+                  <>${arr}M <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>ARR</span></>
+                )}</div>
                 <div style={{
                   fontSize: 12, color: cash < 400 ? "rgba(248,113,113,0.9)" : "rgba(255,255,255,0.4)",
                   fontFamily: FONTS.mono, marginTop: 2,
@@ -448,9 +464,9 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             {/* Four dimensions */}
             <div style={{ marginBottom: weekLog.length > 0 ? 14 : 0 }}>
               <DimBar label="Company" value={dims.company} />
-              <DimBar label="Relation" value={dims.relationships} />
+              <DimBar label="People" value={dims.relationships} />
               <DimBar label="Energy" value={dims.energy} />
-              <DimBar label="Integrity" value={dims.integrity} />
+              <DimBar label="Ethics" value={dims.integrity} />
             </div>
 
             {/* Journey timeline */}
@@ -587,7 +603,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             style={{
               background: "rgba(255,255,255,0.03)",
               border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 20, padding: "28px 24px", marginBottom: 24,
+              borderRadius: 20, padding: "24px 22px", marginBottom: 20,
               animation: "fadeUp 0.6s ease",
               cursor: waitingForTap ? "pointer" : "default",
               transition: "border-color 0.3s ease",
@@ -615,15 +631,15 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             )}
             {waitingForTap && (
               <div style={{
-                marginTop: 20, textAlign: "center",
+                marginTop: 16, textAlign: "center",
                 opacity: 0, animation: "fadeUp 0.6s ease 0.3s forwards",
               }}>
-                <span style={{
-                  fontSize: 12, color: "rgba(255,255,255,0.25)",
-                  fontFamily: FONTS.mono, letterSpacing: "1px",
-                }}>
-                  tap to continue
-                </span>
+                <div style={{
+                  width: 20, height: 2,
+                  background: "rgba(255,255,255,0.15)",
+                  margin: "0 auto",
+                  animation: "pulse 2s infinite",
+                }} />
               </div>
             )}
           </div>
@@ -658,27 +674,29 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           </div>
         )}
 
-        {/* MILESTONE */}
+        {/* MILESTONE — inline card, doesn't block the flow */}
         {milestone && !loading && !narrative && !compressing && !surpriseEvent && (
           <div style={{
-            flex: 1, display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            animation: "milestoneGlow 1.2s ease", padding: "40px 20px",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 16,
+            padding: "20px 24px",
+            marginBottom: 20,
+            textAlign: "center",
+            animation: "fadeUp 0.6s ease",
           }}>
-            <div style={{ textAlign: "center", maxWidth: 360 }}>
-              <div style={{
-                fontFamily: FONTS.display, fontSize: "clamp(28px, 6vw, 36px)",
-                color: "#fff", fontWeight: 700, lineHeight: 1.2,
-                marginBottom: 20, letterSpacing: "-0.5px",
-              }}>
-                {milestone.message}
-              </div>
-              <div style={{
-                fontSize: 15, color: "rgba(255,255,255,0.5)",
-                fontFamily: FONTS.display, fontStyle: "italic", lineHeight: 1.7,
-              }}>
-                {milestone.subtext}
-              </div>
+            <div style={{
+              fontFamily: FONTS.display, fontSize: 18,
+              color: "#fff", fontWeight: 600, lineHeight: 1.3,
+              marginBottom: 8,
+            }}>
+              {milestone.message}
+            </div>
+            <div style={{
+              fontSize: 13, color: "rgba(255,255,255,0.4)",
+              fontFamily: FONTS.display, fontStyle: "italic", lineHeight: 1.6,
+            }}>
+              {milestone.subtext}
             </div>
           </div>
         )}
