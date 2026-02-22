@@ -429,6 +429,8 @@ export function getTension(week: number, usedIndices: Set<number>, dims?: GameDi
     if (usedIndices.has(t.idx)) return false;
     // If tension requires a past choice, only include if that choice was made
     if (t.requires && !choiceSet.has(t.requires.choice)) return false;
+    // Fourth wall moments only appear in weeks 28-35 (one per game, mid-late Act 2)
+    if (t.fourthWall && (week < 28 || week > 35)) return false;
     return true;
   });
 
@@ -493,6 +495,9 @@ export function getTension(week: number, usedIndices: Set<number>, dims?: GameDi
       if (t.category === 'life') score += 2;
       if (t.format === 'intimate') score += 2;
     }
+
+    // Fourth wall moments get a strong bonus when they're eligible — they should feel inevitable
+    if (t.fourthWall && week >= 28 && week <= 35) score += 10;
 
     // Variety: slight random factor so it's not 100% deterministic
     score += Math.random() * 2;

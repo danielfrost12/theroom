@@ -88,17 +88,28 @@ export function SceneBackground({ sceneKey, children, mood }: SceneBackgroundPro
   // Breathing animation speed — calmer when things are good, faster when tense
   const breathDuration = effectiveMood.tension > 60 ? 6 : effectiveMood.tension > 35 ? 10 : 16;
 
+  // Dimension-as-atmosphere: the world gets darker as things deteriorate
+  // Low average = darker gradient (less visible light source)
+  const dimAvg = (effectiveMood.energy + effectiveMood.relationships + effectiveMood.integrity) / 3;
+  const gradientOpacity = dimAvg > 60 ? 1.0 : dimAvg > 35 ? 0.7 : 0.4;
+
+  // Vignette intensifies with isolation (low relationships) and corruption (low integrity)
+  const vignetteStrength = Math.min(0.6,
+    0.3 + (1 - effectiveMood.relationships / 100) * 0.15 + (1 - effectiveMood.integrity / 100) * 0.15
+  );
+
   return (
     <div style={{
       position: "fixed", inset: 0,
       background: "#0a0a0f",
     }}>
-      {/* Primary emotional gradient — breathes slowly */}
+      {/* Primary emotional gradient — breathes slowly, dims with deterioration */}
       <div style={{
         position: "absolute", inset: 0,
         background: gradient,
-        transition: "background 4s ease",
+        transition: "background 4s ease, opacity 3s ease",
         animation: `breathe ${breathDuration}s ease-in-out infinite`,
+        opacity: gradientOpacity,
       }} />
 
       {/* Subtle noise texture for depth */}
@@ -111,10 +122,11 @@ export function SceneBackground({ sceneKey, children, mood }: SceneBackgroundPro
         pointerEvents: "none",
       }} />
 
-      {/* Vignette — edges darker, center where the text is slightly lighter */}
+      {/* Vignette — intensifies with isolation and moral compromise */}
       <div style={{
         position: "absolute", inset: 0,
-        background: "radial-gradient(ellipse at 50% 45%, transparent 30%, rgba(0,0,0,0.3) 100%)",
+        background: `radial-gradient(ellipse at 50% 45%, transparent 25%, rgba(0,0,0,${vignetteStrength}) 100%)`,
+        transition: "background 4s ease",
         pointerEvents: "none",
       }} />
 

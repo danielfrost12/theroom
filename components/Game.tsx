@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { FONTS, COLORS, TEMPO } from '@/lib/game/constants';
+import { FONTS, COLORS, TEMPO, getActTempo, shouldEarnSilence, getDashboardVisibility } from '@/lib/game/constants';
 import { GameDimensions, Ending, Decision, IndexedTension, TensionFormat } from '@/lib/game/types';
 import { getSceneForState, getBreathingMoment, getCompressionLine, getAct, getTension, checkEnding, checkSurpriseEvent, checkMilestone, getTensionStakes, detectArchetype, getArchetypeBias, type SurpriseEvent, type Milestone, type TensionStakes } from '@/lib/game/engine';
 import { generateNarrative } from '@/lib/ai/narrative';
@@ -51,6 +51,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const [milestone, setMilestone] = useState<Milestone | null>(null);
   const [usedMilestones, setUsedMilestones] = useState<Set<string>>(new Set());
   const [archetypeBias, setArchetypeBias] = useState<Record<string, number>>({});
+  const [earnedSilence, setEarnedSilence] = useState(false);
+  const [isFourthWall, setIsFourthWall] = useState(false);
   const pendingContinueRef = useRef<(() => void) | null>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const usedTensionsRef = useRef<Set<number>>(new Set());
@@ -185,6 +187,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     setNarrative(null);
     setShowCustom(false);
     setCustomText("");
+    setIsFourthWall(!!t.fourthWall);
   };
 
   // --- HANDLE CHOICE ---
@@ -193,8 +196,20 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     setLoading(true);
     setNarrative(null);
     setForeshadow(null);
-    setShowBreathing(true);
-    setBreathingMoment(getBreathingMoment(dims, week));
+    setIsFourthWall(false);
+
+    // Earned silence: after critical Act 2/3 choices, show darkness instead of a breathing quote
+    const silenceEarned = shouldEarnSilence(week, stakes, isConsequence);
+    setEarnedSilence(silenceEarned);
+
+    if (!silenceEarned) {
+      setShowBreathing(true);
+      setBreathingMoment(getBreathingMoment(dims, week));
+    } else {
+      // Void: just darkness. No text. The choice is the content.
+      setShowBreathing(true);
+      setBreathingMoment(null);
+    }
 
     // Check for foreshadowing on this choice
     if (tension) {
@@ -328,7 +343,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     }
 
     // --- CONTINUATION ---
-    const shouldCompress = Math.random() > 0.55 && newWeek < 48;
+    const actTempo = getActTempo(act);
+    const shouldCompress = Math.random() < actTempo.compressChance && newWeek < 48;
 
     if (shouldCompress) {
       const skipWeeks = Math.min(1 + Math.floor(Math.random() * 3), 52 - newWeek);
@@ -366,12 +382,12 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
 
             const compressEnding = checkEnding({ week: compressedWeek, cash: compressedCash, arr: compressedArr, dims: driftDims });
             if (compressEnding) {
-              addTimeout(() => onEnd(compressEnding, compressedArr, driftDims, newDecisions, compressedWeekLog, pivotalMoments), TEMPO.narrativeTapDelay);
+              addTimeout(() => onEnd(compressEnding, compressedArr, driftDims, newDecisions, compressedWeekLog, pivotalMoments), actTempo.narrativeTapDelay);
               return;
             }
 
             advanceToNextTension(compressedWeek, driftDims, compressedCash, compressedArr, newDecisions, compressedWeekLog);
-          }, TEMPO.compressDisplay);
+          }, actTempo.compressDisplay);
         };
       }
     } else {
@@ -381,8 +397,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       };
     }
 
-    // Show "tap to continue" after reading pause — longer for consequences
-    const readDelay = isConsequence ? 2200 : 1500;
+    // Show "tap to continue" after reading pause — act-scaled + consequence bonus
+    const readDelay = isConsequence ? actTempo.narrativeTapDelay + 700 : actTempo.narrativeTapDelay;
     addTimeout(() => setWaitingForTap(true), readDelay);
   };
 
@@ -409,8 +425,10 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
         display: "flex", flexDirection: "column",
       }}>
 
-        {/* Dashboard — always visible except during full-screen overlays */}
-        {!compressing && !surpriseEvent && (
+        {/* Dashboard — dissolves by act, hidden during fourth-wall moments */}
+        {!compressing && !surpriseEvent && !isFourthWall && (() => {
+          const viz = getDashboardVisibility(week);
+          return (
           <div style={{
             background: "rgba(255,255,255,0.03)",
             borderRadius: 20,
@@ -418,20 +436,26 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             padding: "20px 20px 16px",
             marginBottom: 24,
             animation: "quickFade 0.4s ease",
+            opacity: viz.overall,
+            transition: "opacity 2s ease",
           }}>
             {/* Header */}
             <div style={{
               display: "flex", justifyContent: "space-between", alignItems: "center",
               marginBottom: 16, paddingBottom: 14,
               borderBottom: "1px solid rgba(255,255,255,0.06)",
+              opacity: viz.header,
+              transition: "opacity 2s ease",
             }}>
               <div>
                 <div style={{
                   fontFamily: FONTS.display, fontSize: 20, color: "#fff", fontWeight: 600,
                 }}>{companyName}</div>
+                {viz.weekCount && (
                 <div style={{
                   fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: FONTS.mono, marginTop: 2,
                 }}>Week {week} of 52</div>
+                )}
                 {week === 16 && (
                   <div style={{
                     fontSize: 10, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
@@ -445,7 +469,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                   }}>the reckoning</div>
                 )}
               </div>
-              <div style={{ textAlign: "right" }}>
+              <div style={{ textAlign: "right", opacity: viz.cash, transition: "opacity 2s ease" }}>
                 <div style={{
                   fontSize: 18, fontWeight: 700, color: "#fff",
                   fontFamily: FONTS.mono,
@@ -462,11 +486,11 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             </div>
 
             {/* Four dimensions */}
-            <div style={{ marginBottom: weekLog.length > 0 ? 14 : 0 }}>
-              <DimBar label="Company" value={dims.company} />
-              <DimBar label="People" value={dims.relationships} />
-              <DimBar label="Energy" value={dims.energy} />
-              <DimBar label="Ethics" value={dims.integrity} />
+            <div style={{ marginBottom: weekLog.length > 0 ? 14 : 0, opacity: viz.dims, transition: "opacity 2s ease" }}>
+              <DimBar label="Company" value={dims.company} hideValue={!viz.dimValues} />
+              <DimBar label="People" value={dims.relationships} hideValue={!viz.dimValues} />
+              <DimBar label="Energy" value={dims.energy} hideValue={!viz.dimValues} />
+              <DimBar label="Ethics" value={dims.integrity} hideValue={!viz.dimValues} />
             </div>
 
             {/* Journey timeline */}
@@ -493,6 +517,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                 <div style={{
                   paddingTop: 14,
                   borderTop: "1px solid rgba(255,255,255,0.04)",
+                  opacity: viz.timeline,
+                  transition: "opacity 2s ease",
                 }}>
                   <div style={{
                     display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -546,26 +572,41 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
               );
             })()}
           </div>
-        )}
+          );
+        })()}
 
-        {/* Breathing moment / Loading state */}
+        {/* Breathing moment / Earned silence */}
         {showBreathing && (
-          <div role="status" aria-live="polite" style={{
-            textAlign: "center", padding: "40px 20px",
-            animation: "fadeUp 0.5s ease",
-          }}>
-            <div style={{
-              fontFamily: FONTS.display, fontSize: 17,
-              color: "rgba(255,255,255,0.45)", fontStyle: "italic",
-              lineHeight: 1.7, maxWidth: 340, margin: "0 auto",
+          earnedSilence ? (
+            // Earned silence: just darkness. A thin line breathing. The choice IS the content.
+            <div role="status" aria-live="polite" style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+              minHeight: 200,
             }}>
-              {breathingMoment}
+              <div style={{
+                width: 32, height: 1,
+                background: "rgba(255,255,255,0.06)",
+                animation: "pulse 4s ease-in-out infinite",
+              }} />
             </div>
-            <div style={{
-              width: 24, height: 2, background: "rgba(255,255,255,0.15)",
-              margin: "24px auto 0", animation: "pulse 1.5s infinite",
-            }} />
-          </div>
+          ) : (
+            <div role="status" aria-live="polite" style={{
+              textAlign: "center", padding: "40px 20px",
+              animation: "fadeUp 0.5s ease",
+            }}>
+              <div style={{
+                fontFamily: FONTS.display, fontSize: 17,
+                color: "rgba(255,255,255,0.45)", fontStyle: "italic",
+                lineHeight: 1.7, maxWidth: 340, margin: "0 auto",
+              }}>
+                {breathingMoment}
+              </div>
+              <div style={{
+                width: 24, height: 2, background: "rgba(255,255,255,0.15)",
+                margin: "24px auto 0", animation: "pulse 1.5s infinite",
+              }} />
+            </div>
+          )
         )}
 
         {/* Time compression */}

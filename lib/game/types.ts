@@ -48,6 +48,8 @@ export interface Tension {
   personalContext?: string;
   // Callback line — reminder of the past choice that triggered this consequence
   callbackLine?: string;
+  // Fourth wall moment — breaks the game frame around week 30
+  fourthWall?: boolean;
 }
 
 export interface IndexedTension extends Tension {

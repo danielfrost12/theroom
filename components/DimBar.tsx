@@ -5,9 +5,10 @@ import { FONTS, dimColor, dimBarColor } from '@/lib/game/constants';
 interface DimBarProps {
   label: string;
   value: number;
+  hideValue?: boolean;
 }
 
-export function DimBar({ label, value }: DimBarProps) {
+export function DimBar({ label, value, hideValue }: DimBarProps) {
   const barColor = dimBarColor(value);
   const textColor = dimColor(value);
 
@@ -54,17 +55,18 @@ export function DimBar({ label, value }: DimBarProps) {
         }} />
       </div>
 
-      {/* Value — small, precise */}
+      {/* Value — small, precise. Dissolves in Act 3. */}
       <span style={{
         fontSize: 13,
         fontWeight: 500,
         color: textColor,
         fontFamily: FONTS.mono,
         letterSpacing: "-0.5px",
-        transition: "color 0.5s ease",
+        transition: "color 0.5s ease, opacity 2s ease",
         width: 24,
         textAlign: "right",
         flexShrink: 0,
+        opacity: hideValue ? 0 : 1,
       }}>{value}</span>
     </div>
   );

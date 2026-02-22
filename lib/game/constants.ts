@@ -376,6 +376,34 @@ export const TENSIONS: Tension[] = [
     interiority: "You refreshed the news feed four times before you believed it.",
   },
 
+  // --- FOURTH WALL MOMENT ---
+  // Around week 28-35, the game breaks. One moment that isn't about the company.
+  // It's about the person playing. The silence after this one is the point.
+  {
+    left: "Reply",
+    right: "Put the phone down",
+    context: "Your phone buzzes. Not Slack. Not email. A text from someone you haven't talked to in a while. Not Marcus. Not Priya. Someone from before all this. 'Hey. Just thinking about you. Are you okay?'",
+    leftEffect: { company: -3, relationships: 5, energy: 8, integrity: 3 },
+    rightEffect: { company: 3, relationships: -3, energy: -5, integrity: -3 },
+    category: "life",
+    format: "intimate",
+    interiority: "You stared at the screen for a long time.",
+    personalContext: "You used to talk every week.",
+    fourthWall: true,
+  },
+  {
+    left: "Go",
+    right: "You can't",
+    context: "There's a voicemail from your mother. She didn't ask about the company. She asked if you were eating. She asked if you were sleeping. She said she saw your face on a screen somewhere and you looked tired.",
+    leftEffect: { company: -5, relationships: 8, energy: 10, integrity: 5 },
+    rightEffect: { company: 3, relationships: -8, energy: -8, integrity: -3 },
+    category: "life",
+    format: "intimate",
+    interiority: "You listened to it twice. Then once more.",
+    personalContext: "She still thinks you work at that other place.",
+    fourthWall: true,
+  },
+
   // --- CONSEQUENCE TENSIONS ---
   // These only appear if you made a specific choice earlier. The game remembers.
 
@@ -588,6 +616,81 @@ export const TEMPO = {
   endingDelay: 3000,     // delay before transitioning to endgame
   forcedChoiceDelay: 2000,// auto-select delay for forced choices
 };
+
+// Act-scaled tempo — the game's heartbeat changes shape
+// Act 1: quick, energetic, you're learning the rhythm
+// Act 2: heavier, the grind has weight, moments linger
+// Act 3: vast, silences expand, less text, more void
+export function getActTempo(act: 1 | 2 | 3) {
+  if (act === 1) return {
+    narrativeTapDelay: 1200,    // quick — keep the energy up
+    breathe: 1800,              // short breathing moments
+    compressDisplay: 1800,      // time skips feel light
+    silence: 1200,              // brief pauses
+    compressChance: 0.50,       // more compression — Act 1 should fly
+  };
+  if (act === 2) return {
+    narrativeTapDelay: 1800,    // heavier — let choices sink in
+    breathe: 2500,              // breathing moments drag
+    compressDisplay: 2500,      // time skips feel weighted
+    silence: 2200,              // silence has more gravity
+    compressChance: 0.45,       // moderate compression
+  };
+  // Act 3
+  return {
+    narrativeTapDelay: 2500,    // vast — silence between moments
+    breathe: 3200,              // breathing moments are meditative
+    compressDisplay: 3000,      // the world slows down
+    silence: 3500,              // long silences, like you can hear yourself think
+    compressChance: 0.35,       // fewer skips — every week matters now
+  };
+}
+
+// Earned silence: after truly heavy choices, replace breathing moments with void
+// Returns true if this moment deserves darkness instead of a breathing quote
+export function shouldEarnSilence(week: number, stakes: string, isConsequence: boolean): boolean {
+  const act = week <= 15 ? 1 : week <= 35 ? 2 : 3;
+  // Act 1: never — you're still learning
+  if (act === 1) return false;
+  // Act 2: only after consequence tensions
+  if (act === 2) return isConsequence;
+  // Act 3: after any high-stakes or critical choice
+  return stakes === 'critical' || stakes === 'high' || isConsequence;
+}
+
+// Dashboard visibility by act — the HUD dissolves as you go deeper
+// Returns opacity values for different dashboard sections
+export function getDashboardVisibility(week: number) {
+  const act = week <= 15 ? 1 : week <= 35 ? 2 : 3;
+  if (act === 1) return {
+    header: 1.0,       // full header
+    dims: 1.0,         // all dim bars visible
+    dimValues: true,    // show numeric values
+    timeline: 1.0,     // full timeline
+    cash: 1.0,         // cash visible
+    weekCount: true,    // show "Week X of 52"
+    overall: 1.0,      // full dashboard opacity
+  };
+  if (act === 2) return {
+    header: 0.9,
+    dims: 0.85,
+    dimValues: true,    // still show numbers
+    timeline: 0.7,     // timeline fading
+    cash: 0.9,
+    weekCount: true,
+    overall: 0.85,
+  };
+  // Act 3: minimal. You're not managing anymore. You're just... here.
+  return {
+    header: 0.7,
+    dims: 0.5,         // bars barely visible
+    dimValues: false,   // no more numbers — you feel it, you don't measure it
+    timeline: 0.3,     // timeline almost gone
+    cash: week > 45 ? 0.3 : 0.5,  // cash fades further in final weeks
+    weekCount: false,   // no more "Week X of 52"
+    overall: 0.5,       // the whole dashboard is a ghost
+  };
+}
 
 export const COLORS = {
   // Dimension health — centralized from DimBar, CEOCard, ShareImage
