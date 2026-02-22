@@ -34,6 +34,8 @@ export function Onboarding({ onStart }: OnboardingProps) {
         background: "#0a0a0f",
         overflow: "hidden",
         outline: "none",
+        WebkitTapHighlightColor: "transparent",
+        touchAction: "manipulation",
       }}
     >
       {/* Warm ambient gradient */}
@@ -53,21 +55,22 @@ export function Onboarding({ onStart }: OnboardingProps) {
         pointerEvents: "none",
       }} />
 
-      {/* Content */}
+      {/* Content — uses dvh to fit within visible viewport on mobile */}
       <div style={{
         position: "relative", zIndex: 1,
         display: "flex", flexDirection: "column",
         justifyContent: "flex-end",
-        minHeight: "100vh",
-        padding: "env(safe-area-inset-top, 0px) max(32px, env(safe-area-inset-right, 0px)) max(60px, env(safe-area-inset-bottom, 0px)) max(32px, env(safe-area-inset-left, 0px))",
+        height: "100dvh",
+        padding: "env(safe-area-inset-top, 0px) max(24px, env(safe-area-inset-right, 0px)) max(32px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px))",
         fontFamily: FONTS.body,
+        boxSizing: "border-box",
       }}>
         {/* Phase 1: Ambient scene-setting text */}
         <div style={{
           opacity: phase >= 1 ? 1 : 0,
           transform: phase >= 1 ? "translateY(0)" : "translateY(12px)",
           transition: "all 1.5s ease",
-          marginBottom: 28,
+          marginBottom: 20,
         }}>
           <div style={{
             fontFamily: FONTS.display,
@@ -88,11 +91,11 @@ export function Onboarding({ onStart }: OnboardingProps) {
           opacity: phase >= 2 ? 1 : 0,
           transform: phase >= 2 ? "translateY(0)" : "translateY(12px)",
           transition: "all 1.2s ease",
-          marginBottom: 14,
+          marginBottom: 12,
         }}>
           <h1 style={{
             fontFamily: FONTS.display,
-            fontSize: "clamp(38px, 8vw, 56px)",
+            fontSize: "clamp(36px, 8vw, 56px)",
             fontWeight: 700,
             color: "#fff",
             letterSpacing: "-1.5px",
@@ -101,10 +104,10 @@ export function Onboarding({ onStart }: OnboardingProps) {
             The Room
           </h1>
           <p style={{
-            fontSize: 16,
+            fontSize: 15,
             color: "rgba(255,255,255,0.55)",
             fontWeight: 300,
-            marginTop: 8,
+            marginTop: 6,
             lineHeight: 1.4,
           }}>
             Build a company. See how the story ends.
@@ -116,10 +119,10 @@ export function Onboarding({ onStart }: OnboardingProps) {
           opacity: phase >= 3 ? 1 : 0,
           transform: phase >= 3 ? "translateY(0)" : "translateY(8px)",
           transition: "all 1s ease",
-          marginBottom: 32,
+          marginBottom: 24,
         }}>
           <div style={{
-            display: "flex", gap: 20, flexWrap: "wrap",
+            display: "flex", gap: 16, flexWrap: "wrap",
           }}>
             {[
               { n: stats.totalPlayers, label: "CEOs played" },
@@ -128,10 +131,10 @@ export function Onboarding({ onStart }: OnboardingProps) {
             ].map((s, i) => (
               <div key={i}>
                 <span style={{
-                  fontFamily: FONTS.mono, fontSize: 16, fontWeight: 700, color: "#fff",
+                  fontFamily: FONTS.mono, fontSize: 14, fontWeight: 700, color: "#fff",
                 }}>{s.n}</span>
                 <span style={{
-                  fontSize: 12, color: "rgba(255,255,255,0.35)", marginLeft: 6,
+                  fontSize: 11, color: "rgba(255,255,255,0.35)", marginLeft: 5,
                 }}>{s.label}</span>
               </div>
             ))}
@@ -153,7 +156,7 @@ export function Onboarding({ onStart }: OnboardingProps) {
             }} />
             <span style={{
               fontFamily: FONTS.mono,
-              fontSize: 13,
+              fontSize: 12,
               color: "rgba(255,255,255,0.40)",
               letterSpacing: "1px",
             }}>
@@ -163,7 +166,7 @@ export function Onboarding({ onStart }: OnboardingProps) {
           <div style={{
             fontSize: 11,
             color: "rgba(255,255,255,0.20)",
-            marginTop: 8,
+            marginTop: 6,
             fontFamily: FONTS.mono,
           }}>
             ~20 min &middot; 52 weeks &middot; &infin; endings

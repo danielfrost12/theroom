@@ -1,6 +1,6 @@
 'use client';
 
-import { FONTS } from '@/lib/game/constants';
+import { FONTS, dimColor, dimBarColor } from '@/lib/game/constants';
 
 interface DimBarProps {
   label: string;
@@ -8,18 +8,8 @@ interface DimBarProps {
 }
 
 export function DimBar({ label, value }: DimBarProps) {
-  // Color communicates health — gradient from red through amber to green
-  const barColor = value > 60
-    ? "rgba(134,239,172,0.6)"
-    : value > 30
-      ? "rgba(253,224,71,0.5)"
-      : "rgba(248,113,113,0.6)";
-
-  const textColor = value > 60
-    ? "rgba(134,239,172,0.9)"
-    : value > 30
-      ? "rgba(253,224,71,0.85)"
-      : "rgba(248,113,113,0.95)";
+  const barColor = dimBarColor(value);
+  const textColor = dimColor(value);
 
   return (
     <div

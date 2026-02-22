@@ -1,20 +1,7 @@
 'use client';
 
 import { ShareData } from '@/lib/share';
-
-function weekColor(emoji: string): string {
-  if (emoji === '🟩' || emoji === '🏆') return 'rgba(134,239,172,0.9)';
-  if (emoji === '🟨') return 'rgba(253,224,71,0.8)';
-  if (emoji === '🟥') return 'rgba(248,113,113,0.9)';
-  if (emoji === '💀') return 'rgba(248,113,113,1)';
-  return 'rgba(255,255,255,0.2)';
-}
-
-function dimColor(value: number): string {
-  if (value > 60) return 'rgba(134,239,172,0.9)';
-  if (value > 30) return 'rgba(253,224,71,0.9)';
-  return 'rgba(248,113,113,0.95)';
-}
+import { FONTS, dimColor, weekDotColor } from '@/lib/game/constants';
 
 // Split weekLog string back into emoji array (each emoji is multi-byte)
 function parseWeekLog(log: string): string[] {
@@ -66,7 +53,7 @@ export function ResultCard({ data }: { data: ShareData }) {
           marginBottom: 6,
         }}>
           <div style={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "'DM Sans', sans-serif",
             fontSize: 12,
             color: 'rgba(255,255,255,0.25)',
             letterSpacing: '3px',
@@ -92,7 +79,7 @@ export function ResultCard({ data }: { data: ShareData }) {
             {data.endingEmoji}
           </div>
           <div style={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "'DM Sans', sans-serif",
             fontSize: 'clamp(30px, 7vw, 40px)',
             fontWeight: 700,
             color: '#fff',
@@ -140,7 +127,7 @@ export function ResultCard({ data }: { data: ShareData }) {
           {weeks.map((w, i) => (
             <div key={i} style={{
               width: 7, height: 7, borderRadius: 1.5,
-              background: weekColor(w), opacity: 0.9,
+              background: weekDotColor(w), opacity: 0.9,
             }} />
           ))}
         </div>
@@ -172,7 +159,7 @@ export function ResultCard({ data }: { data: ShareData }) {
         {/* Headline */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16 }}>
           <div style={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "'DM Sans', sans-serif",
             fontSize: 13,
             color: 'rgba(255,255,255,0.4)',
             fontStyle: 'italic',
@@ -191,7 +178,7 @@ export function ResultCard({ data }: { data: ShareData }) {
           color: 'rgba(255,255,255,0.5)',
           marginBottom: 20,
           fontStyle: 'italic',
-          fontFamily: "'Playfair Display', serif",
+          fontFamily: "'DM Sans', sans-serif",
         }}>
           Can you do better?
         </div>

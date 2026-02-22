@@ -60,7 +60,7 @@ export const SURPRISE_EVENTS: SurpriseEvent[] = [
     message: "David forwarded your last investor update to someone you've never met.",
     subtext: "His assistant said it was 'routine.'",
     effects: { relationships: -5, integrity: -3 },
-    condition: ({ dims, week, pastChoices }) => week >= 10 && pastChoices.includes("BUY TIME") && dims.integrity < 45,
+    condition: ({ dims, week, pastChoices }) => week >= 10 && pastChoices.includes("Buy yourself a quarter") && dims.integrity < 45,
     once: "david_forward",
   },
   {
@@ -74,7 +74,7 @@ export const SURPRISE_EVENTS: SurpriseEvent[] = [
     message: "Marcus submitted a two-week notice.",
     subtext: "He's going to the competitor.",
     effects: { company: -12, relationships: -8, energy: -5 },
-    condition: ({ dims, week, pastChoices }) => week >= 10 && pastChoices.includes("LET THEM GO") && dims.relationships < 35,
+    condition: ({ dims, week, pastChoices }) => week >= 10 && pastChoices.includes("Let him go") && dims.relationships < 35,
     once: "marcus_leaves",
   },
 

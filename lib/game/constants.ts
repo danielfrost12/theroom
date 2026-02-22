@@ -84,6 +84,8 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 5, relationships: -15, energy: -8, integrity: -3 },
     category: "product",
     leftForeshadow: "Marcus hasn't coded this fast in months.",
+    interiority: "You watched his face while he presented. He already knows what you're going to say.",
+    personalContext: "Marcus was the first person who believed in you.",
   },
   {
     left: "Ship it now",
@@ -93,6 +95,7 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: -12, relationships: 3, energy: -8, integrity: 8 },
     category: "product",
     leftForeshadow: "The bug is live now. Maybe nobody will notice.",
+    personalContext: "Three engineers pulled an all-nighter for this launch.",
   },
   {
     left: "Chase the new market",
@@ -102,6 +105,7 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: -8, relationships: 3, energy: 3, integrity: 5 },
     category: "product",
     leftForeshadow: "Your best customers got an email today. They don't know yet.",
+    personalContext: "Your first customer still emails you every Friday.",
   },
   {
     left: "Build their feature",
@@ -110,6 +114,9 @@ export const TENSIONS: Tension[] = [
     leftEffect: { company: 8, relationships: -5, energy: -10, integrity: -12 },
     rightEffect: { company: -10, relationships: 3, energy: 5, integrity: 8 },
     category: "product",
+    format: "slack",
+    sender: "Marcus",
+    interiority: "You scrolled past the Slack messages three times before you opened them.",
   },
 
   // --- PEOPLE ---
@@ -121,6 +128,8 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 8, relationships: -18, energy: -5, integrity: -5 },
     category: "people",
     rightForeshadow: "The team watched him pack his desk. Nobody said goodbye.",
+    interiority: "You've been rehearsing this conversation in the shower for a week.",
+    personalContext: "He moved across the country for this job.",
   },
   {
     left: "Let it go",
@@ -130,6 +139,10 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: -3, relationships: -15, energy: -8, integrity: 10 },
     category: "people",
     rightForeshadow: "Priya closed her laptop and left early. She didn't say goodnight.",
+    format: "email",
+    sender: "David Chen",
+    subject: "Quick note re: board prep",
+    personalContext: "Priya was at your wedding. She gave a speech.",
   },
   {
     left: "Hire the one available now",
@@ -147,6 +160,8 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 8, relationships: -18, energy: -5, integrity: 3 },
     category: "people",
     rightForeshadow: "Your phone buzzed three times that night. You didn't look.",
+    interiority: "You noticed you've been avoiding eye contact with them all week.",
+    personalContext: "They taught you to code in college.",
   },
 
   // --- VALUES ---
@@ -157,6 +172,9 @@ export const TENSIONS: Tension[] = [
     leftEffect: { company: -15, relationships: -5, energy: 3, integrity: 10 },
     rightEffect: { company: 12, relationships: -3, energy: -5, integrity: -15 },
     category: "values",
+    format: "email",
+    sender: "Lisa Park (VP, Procurement)",
+    subject: "Partnership Agreement — Final Terms",
   },
   {
     left: "Tell the team the truth",
@@ -166,6 +184,8 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 3, relationships: -10, energy: 5, integrity: -15 },
     category: "values",
     rightForeshadow: "Secrets have weight. You can feel it when you walk into the room.",
+    interiority: "You opened your mouth in the standup. Then closed it. Nobody noticed.",
+    personalContext: "Priya just posted about Q3 with three exclamation marks.",
   },
   {
     left: "Say you were wrong",
@@ -175,6 +195,7 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 3, relationships: -15, energy: -8, integrity: 8 },
     category: "values",
     leftForeshadow: "The room exhaled when you said it. Something shifted.",
+    format: "observation",
   },
   {
     left: "Credit the engineer",
@@ -192,6 +213,8 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 5, relationships: -8, energy: -5, integrity: -18 },
     category: "values",
     rightForeshadow: "David nodded. But he wrote something down.",
+    interiority: "Your mouth is dry. You take a sip of water before you answer.",
+    personalContext: "David introduced you to your first three customers.",
   },
   {
     left: "Disclose the breach",
@@ -201,6 +224,9 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 5, relationships: -5, energy: -8, integrity: -20 },
     category: "values",
     rightForeshadow: "The log file is still there. Somewhere.",
+    format: "phone",
+    sender: "PagerDuty",
+    personalContext: "Your security engineer quit last month. This was supposed to be on their list.",
   },
 
   // --- STRATEGY ---
@@ -212,6 +238,10 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: -5, relationships: 3, energy: 5, integrity: 5 },
     category: "strategy",
     leftForeshadow: "You blocked your calendar. Priya asked why.",
+    format: "email",
+    sender: "Sarah Kim (Google)",
+    subject: "Coffee next week?",
+    personalContext: "You told the team last month: 'We're building for the long game.'",
   },
   {
     left: "Bet on marketing",
@@ -229,6 +259,7 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: -5, relationships: 3, energy: 3, integrity: 8 },
     category: "strategy",
     rightForeshadow: "The bank balance doesn't lie. The clock is louder now.",
+    personalContext: "Your co-founder remortgaged her house for the last round.",
   },
   {
     left: "Accept the offer",
@@ -237,6 +268,8 @@ export const TENSIONS: Tension[] = [
     leftEffect: { company: -3, relationships: 5, energy: 8, integrity: -5 },
     rightEffect: { company: 5, relationships: -12, energy: -12, integrity: -3 },
     category: "strategy",
+    interiority: "You keep opening the term sheet and closing it. Open. Close. Open.",
+    personalContext: "Twelve people would get life-changing money if you say yes.",
   },
 
   // --- LIFE ---
@@ -248,6 +281,9 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 10, relationships: -15, energy: -15, integrity: -3 },
     category: "life",
     rightForeshadow: "By the time you got home, the food was in the fridge. The lights were off.",
+    format: "phone",
+    sender: "Home",
+    personalContext: "Last week, your partner said: 'I miss who you were before this.'",
   },
   {
     left: "Tell them to go home",
@@ -257,6 +293,9 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 10, relationships: -12, energy: -18, integrity: -5 },
     category: "life",
     rightForeshadow: "Elena's light was still on when you left. It's been on every night this week.",
+    format: "observation",
+    interiority: "You noticed Elena hasn't laughed in two weeks.",
+    personalContext: "Elena has a two-year-old at home.",
   },
   {
     left: "Take a week off",
@@ -265,6 +304,9 @@ export const TENSIONS: Tension[] = [
     leftEffect: { company: -12, relationships: 3, energy: 15, integrity: 3 },
     rightEffect: { company: 8, relationships: -8, energy: -18, integrity: -3 },
     category: "life",
+    format: "intimate",
+    interiority: "Your hands are shaking. You watched them for ten seconds before you noticed.",
+    personalContext: "Your doctor said 'burnout' last month. You didn't tell anyone.",
   },
   {
     left: "Go to the wedding",
@@ -273,6 +315,65 @@ export const TENSIONS: Tension[] = [
     leftEffect: { company: -15, relationships: 12, energy: 5, integrity: 5 },
     rightEffect: { company: 10, relationships: -18, energy: -8, integrity: -8 },
     category: "life",
+  },
+
+  // --- INTIMATE TENSIONS ---
+  // One sentence. The weight is in what's unsaid.
+  {
+    left: "Answer it",
+    right: "Let it ring",
+    context: "Your phone is ringing. It's your dad.",
+    leftEffect: { company: -5, relationships: 8, energy: -3, integrity: 3 },
+    rightEffect: { company: 3, relationships: -8, energy: 3, integrity: -5 },
+    category: "life",
+    format: "intimate",
+    interiority: "He never calls during the day.",
+    personalContext: "You haven't called him in three months.",
+  },
+  {
+    left: "Read it",
+    right: "Close the tab",
+    context: "Someone posted your company in a 'startups that will die this year' thread.",
+    leftEffect: { company: -3, relationships: -3, energy: -8, integrity: 3 },
+    rightEffect: { company: 3, relationships: 3, energy: 5, integrity: -3 },
+    category: "life",
+    format: "intimate",
+  },
+  {
+    left: "Say something",
+    right: "Pretend you didn't hear",
+    context: "You overheard Marcus in the kitchen: 'I don't think they know what they're doing anymore.'",
+    leftEffect: { company: 3, relationships: -10, energy: -5, integrity: 8 },
+    rightEffect: { company: -3, relationships: -5, energy: -8, integrity: -8 },
+    category: "people",
+    format: "observation",
+    interiority: "Your coffee went cold while you stood there.",
+    personalContext: "Six months ago, Marcus told his wife this was the best job he'd ever had.",
+  },
+
+  // --- FORCED-CHOICE MOMENTS ---
+  // Sometimes you don't get to choose. The world decided for you.
+  {
+    left: "Okay",
+    right: "Okay",
+    context: "Your co-founder just told you she's pregnant. She's taking three months off starting next week. There's nothing to decide. There's just what comes next.",
+    leftEffect: { company: -8, relationships: 5, energy: -5, integrity: 5 },
+    rightEffect: { company: -8, relationships: 5, energy: -5, integrity: 5 },
+    category: "life",
+    format: "forced",
+    forcedChoice: "left",
+    interiority: "You smiled. You meant it. Then you did the math.",
+  },
+  {
+    left: "Continue",
+    right: "Continue",
+    context: "The market crashed 12% overnight. Every startup in your space lost a third of their valuation. Your investor's fund is pausing new checks. This isn't about you. It's about everyone.",
+    leftEffect: { company: -10, relationships: -3, energy: -8, integrity: 0 },
+    rightEffect: { company: -10, relationships: -3, energy: -8, integrity: 0 },
+    category: "strategy",
+    format: "forced",
+    forcedChoice: "left",
+    interiority: "You refreshed the news feed four times before you believed it.",
   },
 
   // --- CONSEQUENCE TENSIONS ---
@@ -286,6 +387,7 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 5, relationships: -12, energy: -5, integrity: -3 },
     category: "people",
     requires: { choice: "Let him go" },
+    callbackLine: "You let Marcus go. Now his desk is empty and engineering has no lead.",
   },
 
   {
@@ -296,6 +398,9 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 3, relationships: -5, energy: 3, integrity: -8 },
     category: "people",
     requires: { choice: "Do what a CEO would do" },
+    format: "intimate",
+    interiority: "You typed 'hey' and deleted it. Twice.",
+    callbackLine: "You chose the CEO move over the friendship. Now the silence is louder.",
   },
 
   {
@@ -306,6 +411,9 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 5, relationships: -15, energy: -10, integrity: -18 },
     category: "values",
     requires: { choice: "Buy yourself a quarter" },
+    format: "phone",
+    sender: "David's Office",
+    callbackLine: "You told David you'd hit Q3 numbers. You didn't. Now his analyst knows.",
   },
 
   {
@@ -316,6 +424,10 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: -5, relationships: -8, energy: -3, integrity: -15 },
     category: "product",
     requires: { choice: "Ship it now" },
+    format: "email",
+    sender: "support@meridian.io",
+    subject: "Fwd: URGENT — data loss report (x3)",
+    callbackLine: "You shipped the bug. 200 users just found out.",
   },
 
   {
@@ -326,6 +438,10 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 10, relationships: -8, energy: -5, integrity: -10 },
     category: "strategy",
     requires: { choice: "Stay independent" },
+    format: "phone",
+    sender: "Missed Call",
+    interiority: "You listened to the voicemail three times. His voice was kind. That made it worse.",
+    callbackLine: "You turned down the money. Independence felt different when payroll was real.",
   },
 
   {
@@ -336,6 +452,9 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: 5, relationships: -15, energy: -3, integrity: -8 },
     category: "life",
     requires: { choice: "One more push" },
+    format: "slack",
+    sender: "Elena's Team Lead",
+    callbackLine: "You pushed the team one more time. Elena didn't come back.",
   },
 
   {
@@ -346,6 +465,8 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: -5, relationships: 5, energy: -5, integrity: 8 },
     category: "values",
     requires: { choice: "Take the meeting" },
+    interiority: "You felt your face get hot before you said anything.",
+    callbackLine: "You took the meeting with Google. Someone found out.",
   },
 
   {
@@ -356,11 +477,74 @@ export const TENSIONS: Tension[] = [
     rightEffect: { company: -5, relationships: -10, energy: -15, integrity: -10 },
     category: "values",
     requires: { choice: "Fix it quietly" },
+    format: "email",
+    sender: "Unknown",
+    subject: "Responsible Disclosure — 48hr Notice",
+    callbackLine: "You buried the breach. Someone just dug it up.",
   },
 ];
 
 export const FONTS = {
-  display: "'Playfair Display', Georgia, serif",
+  display: "'DM Sans', 'Helvetica Neue', sans-serif",
   body: "'DM Sans', 'Helvetica Neue', sans-serif",
   mono: "'JetBrains Mono', 'Fira Code', monospace",
 };
+
+export const TEMPO = {
+  silence: 1800,         // blank screen after heavy choices
+  breathe: 2200,         // breathing moment display
+  consequenceDelay: 600, // pause before consequence tensions
+  fadeOut: 400,          // screen transition fade out
+  fadeIn: 300,           // screen transition fade in
+  holdBlack: 200,        // hold on black between screens
+  choiceReveal: 800,     // delay before choices appear (default)
+  choiceRevealHigh: 1800,// delay for high-stakes
+  choiceRevealCrit: 2500,// delay for critical / consequence
+  narrativeSpeed: 25,    // typewriter ms per character (default)
+  intimateSpeed: 45,     // typewriter for intimate format
+  criticalSpeed: 35,     // typewriter for critical stakes
+  fastNarrative: 15,     // typewriter for short text
+  narrativeTapDelay: 1500,// delay before showing "tap to continue"
+  milestoneDisplay: 3500,// how long milestone stays
+  surpriseDisplay: 3000, // how long surprise event stays
+  surpriseResolve: 2500, // delay after surprise before next tension
+  compressDisplay: 3000, // time compression animation
+  endingDelay: 4000,     // delay before transitioning to endgame
+  forcedChoiceDelay: 2000,// auto-select delay for forced choices
+};
+
+export const COLORS = {
+  // Dimension health — centralized from DimBar, CEOCard, ShareImage
+  healthy: { bar: 'rgba(134,239,172,0.6)', text: 'rgba(134,239,172,0.9)' },
+  warning: { bar: 'rgba(253,224,71,0.5)', text: 'rgba(253,224,71,0.85)' },
+  danger:  { bar: 'rgba(248,113,113,0.6)', text: 'rgba(248,113,113,0.95)' },
+  // Semantic text colors
+  foreshadow: 'rgba(255,255,255,0.25)',
+  interiority: 'rgba(255,255,255,0.4)',
+  context: 'rgba(255,255,255,0.75)',
+  muted: 'rgba(255,255,255,0.3)',
+  bg: '#0a0a0f',
+};
+
+// Shared helper: dimension value → color
+export function dimColor(value: number): string {
+  if (value > 60) return COLORS.healthy.text;
+  if (value > 30) return COLORS.warning.text;
+  return COLORS.danger.text;
+}
+
+// Shared helper: dimension value → bar color
+export function dimBarColor(value: number): string {
+  if (value > 60) return COLORS.healthy.bar;
+  if (value > 30) return COLORS.warning.bar;
+  return COLORS.danger.bar;
+}
+
+// Shared helper: week emoji → dot color
+export function weekDotColor(emoji: string): string {
+  if (emoji === "🟩" || emoji === "🏆") return COLORS.healthy.text;
+  if (emoji === "🟨") return COLORS.warning.text;
+  if (emoji === "🟥") return COLORS.danger.text;
+  if (emoji === "💀") return "rgba(248,113,113,1)";
+  return "rgba(255,255,255,0.2)";
+}

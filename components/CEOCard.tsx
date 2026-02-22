@@ -1,6 +1,6 @@
 'use client';
 
-import { FONTS } from '@/lib/game/constants';
+import { FONTS, COLORS, dimColor, weekDotColor } from '@/lib/game/constants';
 import { Ending, GameDimensions } from '@/lib/game/types';
 import { getTotalPlayerCount } from '@/lib/game/stats';
 import { ShareImage } from './ShareImage';
@@ -17,24 +17,34 @@ interface CEOCardProps {
   onPlayAgain: () => void;
 }
 
-// Week dot color for the visible card journey strip
-function weekColor(emoji: string): string {
-  if (emoji === "🟩" || emoji === "🏆") return "rgba(134,239,172,0.9)";
-  if (emoji === "🟨") return "rgba(253,224,71,0.8)";
-  if (emoji === "🟥") return "rgba(248,113,113,0.9)";
-  if (emoji === "💀") return "rgba(248,113,113,1)";
-  return "rgba(255,255,255,0.2)";
-}
+// Generate a screenshottable one-liner from game data
+function viralSummary(weekCount: number, dims: GameDimensions, ending: Ending): string {
+  // Determine dominant theme from what scored highest/lowest
+  const entries = [
+    { key: 'company', val: dims.company },
+    { key: 'relationships', val: dims.relationships },
+    { key: 'energy', val: dims.energy },
+    { key: 'integrity', val: dims.integrity },
+  ];
+  const highest = entries.reduce((a, b) => a.val > b.val ? a : b);
+  const lowest = entries.reduce((a, b) => a.val < b.val ? a : b);
 
-// Dimension color
-function dimColor(value: number): string {
-  if (value > 60) return "rgba(134,239,172,0.9)";
-  if (value > 30) return "rgba(253,224,71,0.9)";
-  return "rgba(248,113,113,0.95)";
+  const themeMap: Record<string, string> = {
+    company: 'the product',
+    relationships: 'the people',
+    energy: 'myself',
+    integrity: 'the truth',
+  };
+
+  const chose = themeMap[highest.key] || 'survival';
+  const lost = themeMap[lowest.key] || 'everything';
+
+  return `${weekCount} weeks. Chose ${chose} over ${lost}.`;
 }
 
 export function CEOCard({ ending, companyName, valuation, weekLog, rank, headline, mirror, dims, onPlayAgain }: CEOCardProps) {
   const totalPlayers = getTotalPlayerCount();
+  const summary = viralSummary(weekLog.length, dims, ending);
 
   const dimEntries = [
     { label: "Company", value: dims.company },
@@ -175,7 +185,7 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, headlin
                 width: 7,
                 height: 7,
                 borderRadius: 1.5,
-                background: weekColor(w),
+                background: weekDotColor(w),
                 opacity: 0.9,
               }} />
             ))}
@@ -227,6 +237,21 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, headlin
               textAlign: "center" as const,
             }}>
               &ldquo;{headline}&rdquo;
+            </div>
+          </div>
+
+          {/* Viral summary — the sentence people screenshot */}
+          <div style={{
+            textAlign: "center" as const,
+            marginBottom: 12,
+          }}>
+            <div style={{
+              fontSize: 11,
+              color: COLORS.muted,
+              fontFamily: FONTS.mono,
+              letterSpacing: "0.5px",
+            }}>
+              {summary}
             </div>
           </div>
 

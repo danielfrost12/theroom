@@ -3,6 +3,7 @@
 import { useRef, useCallback, useState } from 'react';
 import { Ending, GameDimensions } from '@/lib/game/types';
 import { buildShareUrl, ShareData } from '@/lib/share';
+import { FONTS, weekDotColor } from '@/lib/game/constants';
 
 interface ShareImageProps {
   ending: Ending;
@@ -29,15 +30,6 @@ const ENDING_ACCENTS: Record<string, { primary: string; glow: string }> = {
   disgraced: { primary: "rgba(192,132,252,0.8)", glow: "rgba(192,132,252,0.10)" },
   time_up: { primary: "rgba(148,163,184,0.8)", glow: "rgba(148,163,184,0.10)" },
 };
-
-// Week dot color based on emoji
-function weekColor(emoji: string): string {
-  if (emoji === "🟩" || emoji === "🏆") return "rgba(134,239,172,0.9)";
-  if (emoji === "🟨") return "rgba(253,224,71,0.8)";
-  if (emoji === "🟥") return "rgba(248,113,113,0.9)";
-  if (emoji === "💀") return "rgba(248,113,113,1)";
-  return "rgba(255,255,255,0.2)";
-}
 
 
 export function ShareImage({
@@ -192,7 +184,7 @@ export function ShareImage({
                 color: "rgba(255,255,255,0.25)",
                 letterSpacing: "3px",
                 textTransform: "uppercase" as const,
-                fontFamily: "'Playfair Display', serif",
+                fontFamily: "'DM Sans', sans-serif",
               }}>
                 The Room
               </div>
@@ -231,7 +223,7 @@ export function ShareImage({
               </div>
 
               <div style={{
-                fontFamily: "'Playfair Display', serif",
+                fontFamily: "'DM Sans', sans-serif",
                 fontSize: 36,
                 fontWeight: 700,
                 color: "#fff",
@@ -287,7 +279,7 @@ export function ShareImage({
                     width: 6,
                     height: 6,
                     borderRadius: 1,
-                    background: weekColor(w),
+                    background: weekDotColor(w),
                     opacity: 0.9,
                   }} />
                 ))}
@@ -301,7 +293,7 @@ export function ShareImage({
               marginBottom: 16,
             }}>
               <div style={{
-                fontFamily: "'Playfair Display', serif",
+                fontFamily: "'DM Sans', sans-serif",
                 fontSize: 12,
                 color: "rgba(255,255,255,0.4)",
                 fontStyle: "italic",
@@ -312,13 +304,28 @@ export function ShareImage({
               </div>
             </div>
 
+            {/* Viral summary */}
+            <div style={{
+              textAlign: "center" as const,
+              marginBottom: 12,
+            }}>
+              <div style={{
+                fontSize: 11,
+                color: "rgba(255,255,255,0.3)",
+                fontFamily: "'JetBrains Mono', monospace",
+                letterSpacing: "0.5px",
+              }}>
+                {weekLog.length} weeks. {dims.relationships > dims.company ? "Chose the people." : dims.integrity > dims.company ? "Chose the truth." : "Chose the product."}
+              </div>
+            </div>
+
             {/* CTA */}
             <div style={{
               textAlign: "center" as const,
               marginBottom: 16,
             }}>
               <div style={{
-                fontFamily: "'Playfair Display', serif",
+                fontFamily: "'DM Sans', sans-serif",
                 fontSize: 14,
                 color: "rgba(255,255,255,0.5)",
                 fontStyle: "italic",

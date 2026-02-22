@@ -7,13 +7,14 @@ import { CinematicOpening } from '@/components/CinematicOpening';
 import { Game } from '@/components/Game';
 import { Endgame } from '@/components/Endgame';
 import { LofiPlayer } from '@/components/LofiPlayer';
+import { TEMPO } from '@/lib/game/constants';
 
 function ScreenTransition({ children, screenKey }: { children: ReactNode; screenKey: string }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Small delay then fade in
-    const t = setTimeout(() => setVisible(true), 50);
+    // Hold on black briefly, then fade in — cinematic cut between acts
+    const t = setTimeout(() => setVisible(true), TEMPO.holdBlack);
     return () => clearTimeout(t);
   }, [screenKey]);
 
@@ -21,7 +22,7 @@ function ScreenTransition({ children, screenKey }: { children: ReactNode; screen
     <div
       style={{
         opacity: visible ? 1 : 0,
-        transition: 'opacity 0.8s ease',
+        transition: `opacity ${TEMPO.fadeIn}ms ease`,
         position: 'fixed',
         inset: 0,
       }}
@@ -58,7 +59,7 @@ export default function Page() {
         pendingAction();
         setFading(false);
         setPendingAction(null);
-      }, 600); // fade out duration
+      }, TEMPO.fadeOut);
       return () => clearTimeout(t);
     }
   }, [fading, pendingAction]);
@@ -79,7 +80,7 @@ export default function Page() {
       background: '#0a0a0f',
       minHeight: '100vh',
       opacity: fading ? 0 : 1,
-      transition: 'opacity 0.6s ease',
+      transition: `opacity ${TEMPO.fadeOut}ms ease`,
     }}>
       {activeScreen === 'onboarding' && (
         <ScreenTransition screenKey="onboarding">
@@ -104,9 +105,9 @@ export default function Page() {
           <Game
             companyName={companyName}
             firstChoice={firstChoice}
-            onEnd={(ending, arr, dims, decisions, weekLog) => {
+            onEnd={(ending, arr, dims, decisions, weekLog, pivotalMoments) => {
               transitionTo(() => {
-                setEndData({ ending, arr, dims, decisions, weekLog });
+                setEndData({ ending, arr, dims, decisions, weekLog, pivotalMoments });
                 setScreen('endgame');
               });
             }}
@@ -122,6 +123,7 @@ export default function Page() {
             dims={endData.dims}
             decisions={endData.decisions}
             weekLog={endData.weekLog}
+            pivotalMoments={endData.pivotalMoments}
             companyName={companyName}
             onPlayAgain={() => transitionTo(reset)}
           />

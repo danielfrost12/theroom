@@ -18,12 +18,13 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
   const slackMsg = "Marcus just Slacked the team: the competitor shipped your exact feature. It's live. 12 people are waiting for direction. David has a board call in 3 hours.";
 
   useEffect(() => {
+    // Tightened timing — first 30 seconds matter most
     const timers = [
-      setTimeout(() => setPhase(1), 800),
-      setTimeout(() => setPhase(2), 2500),
-      setTimeout(() => setPhase(3), 4500),
-      setTimeout(() => setPhase(4), 6500),
-      setTimeout(() => setPhase(5), 8500),
+      setTimeout(() => setPhase(1), 500),    // Time appears fast
+      setTimeout(() => setPhase(2), 1500),   // Ambient text
+      setTimeout(() => setPhase(3), 3000),   // Notification 1
+      setTimeout(() => setPhase(4), 4200),   // Notification 2
+      setTimeout(() => setPhase(5), 5200),   // Open laptop
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
@@ -59,8 +60,8 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
     <SceneBackground sceneKey="office_morning">
       <div style={{
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        minHeight: "100vh",
-        padding: "max(40px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px)) max(40px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px))",
+        minHeight: "100dvh",
+        padding: "max(24px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px))",
         fontFamily: FONTS.body,
       }}>
         {/* Phase 1: Time */}

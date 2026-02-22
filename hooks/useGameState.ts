@@ -16,6 +16,7 @@ const INITIAL_STATE: GameState = {
   decisions: [],
   weekLog: [],
   usedTensionIndices: [],
+  pivotalMoments: [],
 };
 
 function loadState(): GameState | null {
