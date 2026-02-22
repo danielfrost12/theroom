@@ -1202,11 +1202,18 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                   { label: tension.left, effects: tension.leftEffect },
                   { label: tension.right, effects: tension.rightEffect },
                 ].map((opt, i) => {
-                  // Show which dimensions this choice costs — names only, not numbers
-                  const costLabels: Record<string, string> = { company: 'company', relationships: 'people', energy: 'energy', integrity: 'ethics' };
-                  const costs = (Object.keys(costLabels) as (keyof typeof costLabels)[])
-                    .filter(k => (opt.effects[k as keyof GameDimensions] || 0) <= -8)
-                    .map(k => costLabels[k]);
+                  // Gut-level cost signal — how a real person would feel about this choice
+                  const efx = opt.effects;
+                  const totalNeg = Math.min(0, efx.company) + Math.min(0, efx.relationships) + Math.min(0, efx.energy) + Math.min(0, efx.integrity);
+                  const totalPos = Math.max(0, efx.company) + Math.max(0, efx.relationships) + Math.max(0, efx.energy) + Math.max(0, efx.integrity);
+                  const personalCost = Math.min(0, efx.energy) + Math.min(0, efx.relationships);
+                  let hint = '';
+                  if (totalNeg > -5) hint = 'safe bet';
+                  else if (personalCost < -15) hint = 'this will cost you';
+                  else if (totalNeg < -25) hint = 'risky';
+                  else if (totalPos > 10 && totalNeg < -10) hint = 'big swing';
+                  else if (efx.integrity < -10) hint = 'you\u2019ll know';
+                  // No hint for ambiguous middle-ground choices — that IS the skill
 
                   return (
                     <button
@@ -1231,13 +1238,14 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                       }}>
                         {opt.label}
                       </span>
-                      {costs.length > 0 && (
+                      {hint && (
                         <span style={{
                           fontSize: 10, fontFamily: FONTS.mono,
                           color: "rgba(255,255,255,0.18)",
                           letterSpacing: "0.5px",
+                          fontStyle: "italic",
                         }}>
-                          costs {costs.join(', ')}
+                          {hint}
                         </span>
                       )}
                     </button>
