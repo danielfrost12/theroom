@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'The Room — A Startup CEO Simulation',
-  description: 'Build a company. See how the story ends. 52 weeks of impossible decisions.',
+  description: 'Build a company. See how the story ends. 24 weeks of impossible decisions.',
   metadataBase: new URL('https://behindtheroom.com'),
   openGraph: {
     title: 'The Room — A Startup CEO Simulation',

@@ -88,7 +88,7 @@ export default async function Image() {
               letterSpacing: '1px',
             }}
           >
-            52 weeks · ∞ endings · behindtheroom.com
+            24 weeks · ∞ endings · behindtheroom.com
           </div>
         </div>
       </div>

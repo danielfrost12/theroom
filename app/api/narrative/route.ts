@@ -5,7 +5,7 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
 function buildScenePrompt(context: string, choice: string, dims: { company: number; relationships: number; energy: number; integrity: number }, week: number, companyName: string): string {
   const dimSummary = `Company: ${dims.company}/100, Relationships: ${dims.relationships}/100, Energy: ${dims.energy}/100, Integrity: ${dims.integrity}/100`;
-  const act = week <= 15 ? 'Act 1 (Honeymoon — optimism, building)' : week <= 35 ? 'Act 2 (The Grind — cracks show, fatigue)' : 'Act 3 (The Reckoning — legacy, cost)';
+  const act = week <= 7 ? 'Act 1 (Honeymoon — optimism, building)' : week <= 17 ? 'Act 2 (The Grind — cracks show, fatigue)' : 'Act 3 (The Reckoning — legacy, cost)';
   return `Narrator of "The Room," a startup simulation. SECOND PERSON, PRESENT TENSE only.
 
 Rules — break any and the output is rejected:
@@ -16,7 +16,7 @@ Rules — break any and the output is rejected:
 - Sharp, specific, darkly funny. Last sentence lingers.
 - No preamble, no labels, no quotation marks around the whole response.
 
-Company: ${companyName}. Week ${week}/52. ${act}.
+Company: ${companyName}. Week ${week}/24. ${act}.
 Situation: ${context}
 Chose: ${choice}
 State: ${dimSummary}

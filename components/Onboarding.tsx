@@ -194,7 +194,7 @@ export function Onboarding({ onStart }: OnboardingProps) {
             marginTop: 6,
             fontFamily: FONTS.mono,
           }}>
-            ~20 min &middot; 52 weeks &middot; &infin; endings
+            ~10 min &middot; 24 weeks &middot; &infin; endings
           </div>
         </div>
       </div>

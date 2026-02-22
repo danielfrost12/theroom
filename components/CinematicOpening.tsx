@@ -306,7 +306,7 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                 lineHeight: 1.6,
                 fontFamily: FONTS.body,
               }}>
-                That was one decision. The game has fifty-two weeks of them.
+                That was one decision. You have twenty-four weeks. That&apos;s all you get.
               </div>
               <div style={{
                 fontSize: 12,
@@ -315,7 +315,7 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                 fontFamily: FONTS.mono,
                 letterSpacing: "0.5px",
               }}>
-                ~20 min · 52 weeks · ∞ endings
+                ~10 min · 24 weeks · ∞ endings
               </div>
               <div style={{ marginBottom: 28 }}>
                 <label

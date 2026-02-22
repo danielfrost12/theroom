@@ -224,9 +224,9 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     if (!isCustom) {
       (Object.keys(effects) as (keyof GameDimensions)[]).forEach(k => {
         let delta = effects[k] || 0;
-        // Honeymoon protection: negative effects are softened in Act 1
+        // Honeymoon protection: slight cushion in Act 1 — but choices still hurt
         if (delta < 0 && currentAct === 1) {
-          delta = Math.ceil(delta * 0.6);
+          delta = Math.ceil(delta * 0.85);
         }
         // Momentum dampening: protect dimensions that are already low
         if (delta < 0 && newDims[k] < 30) {
@@ -252,7 +252,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     }
 
     // ARR growth — realistic startup trajectory
-    // Week 1: $0 ARR. By week 52, exceptional founders might hit $10-20M.
+    // Week 1: $0 ARR. By week 24, exceptional founders might hit $10-20M.
     // $60M+ is IPO territory. Growth compounds but starts tiny.
     const newWeek = week + 1;
     const act = getAct(newWeek);
@@ -276,10 +276,10 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     }
     const newArr = Math.max(0, arr + arrDelta);
 
-    // Cash burn — $2.5M seed burns ~$50K/week, scaling with team size
-    // Revenue comes from ARR (ARR/52 per week, with slight lag)
+    // Cash burn — $2.5M seed burns ~$100K/week, scaling with team size
+    // Revenue comes from ARR (ARR/24 per week, with slight lag)
     const weeklyBurn = 40 + Math.floor(newArr * 1.5); // burn scales with growth
-    const weeklyRevenue = Math.floor(newArr * 1000 / 52); // ARR is in $M, cash in $K
+    const weeklyRevenue = Math.floor(newArr * 1000 / 24); // ARR is in $M, cash in $K
     const newCash = Math.max(0, cash - weeklyBurn + weeklyRevenue);
 
     setDims(newDims);
@@ -344,10 +344,10 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
 
     // --- CONTINUATION ---
     const actTempo = getActTempo(act);
-    const shouldCompress = Math.random() < actTempo.compressChance && newWeek < 48;
+    const shouldCompress = Math.random() < actTempo.compressChance && newWeek < 22 && newWeek >= (actTempo.noCompressBefore || 0);
 
     if (shouldCompress) {
-      const skipWeeks = Math.min(1 + Math.floor(Math.random() * 3), 52 - newWeek);
+      const skipWeeks = Math.min(1 + Math.floor(Math.random() * 2), 24 - newWeek);
       if (skipWeeks > 0) {
         pendingContinueRef.current = () => {
           setWaitingForTap(false);
@@ -357,7 +357,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           setCompressMoment(getCompressionLine(newDims, newWeek, newArr));
           addTimeout(() => {
             const burnPerWeek = 40 + Math.floor(newArr * 1.5);
-            const revPerWeek = Math.floor(newArr * 1000 / 52);
+            const revPerWeek = Math.floor(newArr * 1000 / 24);
             const compressedCash = Math.max(0, newCash + skipWeeks * (revPerWeek - burnPerWeek));
             // Compression ARR: steady compound growth matching the new realistic pace
             const compGrowthRate = newDims.company >= 50 ? 0.05 : newDims.company >= 35 ? 0.02 : -0.02;
@@ -425,6 +425,24 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
         display: "flex", flexDirection: "column",
       }}>
 
+        {/* Progress Gravity — the ONE signal that never disappears.
+            Even when the dashboard dissolves, you know how far you've come. */}
+        <div style={{
+          textAlign: "right",
+          marginBottom: 8,
+          opacity: week <= 7 ? 0.3 : week <= 17 ? 0.25 : 0.2,
+          transition: "opacity 2s ease",
+        }}>
+          <span style={{
+            fontFamily: FONTS.mono,
+            fontSize: 11,
+            color: "rgba(255,255,255,0.5)",
+            letterSpacing: "1px",
+          }}>
+            {week} / 24
+          </span>
+        </div>
+
         {/* Dashboard — dissolves by act, hidden during fourth-wall moments */}
         {!compressing && !surpriseEvent && !isFourthWall && (() => {
           const viz = getDashboardVisibility(week);
@@ -454,15 +472,15 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                 {viz.weekCount && (
                 <div style={{
                   fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: FONTS.mono, marginTop: 2,
-                }}>Week {week} of 52</div>
+                }}>Week {week} of 24</div>
                 )}
-                {week === 16 && (
+                {week === 8 && (
                   <div style={{
                     fontSize: 10, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
                     marginTop: 2, letterSpacing: "1px",
                   }}>the grind begins</div>
                 )}
-                {week === 36 && (
+                {week === 18 && (
                   <div style={{
                     fontSize: 10, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
                     marginTop: 2, letterSpacing: "1px",
@@ -561,7 +579,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                         }} />
                       );
                     })}
-                    {Array.from({ length: Math.max(0, 52 - weekLog.length) }).map((_, i) => (
+                    {Array.from({ length: Math.max(0, 24 - weekLog.length) }).map((_, i) => (
                       <div key={`empty-${i}`} aria-hidden="true" style={{
                         width: 7, height: 7, borderRadius: 2,
                         background: "rgba(255,255,255,0.04)",

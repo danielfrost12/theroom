@@ -2,16 +2,18 @@ import { GameDimensions, Ending, IndexedTension, Decision } from './types';
 import { TENSIONS, BREATHING_MOMENTS, COMPRESSION_LINES } from './constants';
 
 // --- 3-ACT STRUCTURE ---
-// The game has three acts. The player never sees the labels — they feel the shift.
-// Act 1: The Honeymoon (weeks 1-15) — optimism, building, early wins
-// Act 2: The Grind (weeks 16-35) — cracks show, fatigue, harder choices
-// Act 3: The Reckoning (weeks 36-52) — legacy, cost, what it meant
+// 24 weeks. Each decision is ~4% of the game. You feel every one.
+// Act 1: The Honeymoon (weeks 1-7) — optimism, building, early wins
+// Act 2: The Grind (weeks 8-17) — cracks show, fatigue, harder choices
+// Act 3: The Reckoning (weeks 18-24) — legacy, cost, what it meant
+
+export const TOTAL_WEEKS = 24;
 
 export type Act = 1 | 2 | 3;
 
 export function getAct(week: number): Act {
-  if (week <= 15) return 1;
-  if (week <= 35) return 2;
+  if (week <= 7) return 1;
+  if (week <= 17) return 2;
   return 3;
 }
 
@@ -56,9 +58,9 @@ export function detectArchetype(dims: GameDimensions, decisions: Decision[], wee
   if (company < 40 && relationships > 50) scores['The Shepherd'] += 2;
 
   // The Survivor: lasted long despite mediocre stats
-  if (weeks >= 40 && avg < 50) scores['The Survivor'] += 6;
-  if (weeks >= 30 && avg < 45) scores['The Survivor'] += 4;
-  if (weeks >= 20 && Math.min(company, relationships, energy, integrity) > 15) scores['The Survivor'] += 2;
+  if (weeks >= 20 && avg < 50) scores['The Survivor'] += 6;
+  if (weeks >= 15 && avg < 45) scores['The Survivor'] += 4;
+  if (weeks >= 10 && Math.min(company, relationships, energy, integrity) > 15) scores['The Survivor'] += 2;
 
   // The Purist: high integrity, wouldn't compromise
   if (integrity > 60) scores['The Purist'] += 3;
@@ -146,7 +148,7 @@ export const SURPRISE_EVENTS: SurpriseEvent[] = [
     subtext: "1,200 signups before coffee.",
     effects: { company: 8, energy: 5 },
     arrEffect: 3,
-    condition: ({ dims, week }) => week >= 6 && dims.company > 55,
+    condition: ({ dims, week }) => week >= 3 && dims.company > 55,
     once: "viral_tweet",
   },
   {
@@ -154,7 +156,7 @@ export const SURPRISE_EVENTS: SurpriseEvent[] = [
     subtext: "She didn't even tell you. You found out from the CRM.",
     effects: { company: 5, relationships: 5, energy: 3 },
     arrEffect: 5,
-    condition: ({ dims, week }) => week >= 10 && dims.relationships > 50 && dims.company > 40,
+    condition: ({ dims, week }) => week >= 5 && dims.relationships > 50 && dims.company > 40,
     once: "elena_deal",
   },
   {
@@ -170,7 +172,7 @@ export const SURPRISE_EVENTS: SurpriseEvent[] = [
     message: "Elena resigned.",
     subtext: "Her email was two sentences. She thanked no one.",
     effects: { company: -8, relationships: -10, energy: -5 },
-    condition: ({ dims, week }) => week >= 8 && dims.energy < 30 && dims.relationships < 40,
+    condition: ({ dims, week }) => week >= 4 && dims.energy < 30 && dims.relationships < 40,
     once: "elena_quit",
   },
   {
@@ -178,28 +180,28 @@ export const SURPRISE_EVENTS: SurpriseEvent[] = [
     subtext: "They switched to the competitor you ignored.",
     effects: { company: -10, relationships: -3 },
     arrEffect: -8,
-    condition: ({ dims, week }) => week >= 12 && dims.company < 35,
+    condition: ({ dims, week }) => week >= 6 && dims.company < 35,
     once: "client_churn",
   },
   {
     message: "David forwarded your last investor update to someone you've never met.",
     subtext: "His assistant said it was 'routine.'",
     effects: { relationships: -5, integrity: -3 },
-    condition: ({ dims, week, pastChoices }) => week >= 10 && pastChoices.includes("Buy yourself a quarter") && dims.integrity < 45,
+    condition: ({ dims, week, pastChoices }) => week >= 5 && pastChoices.includes("Buy yourself a quarter") && dims.integrity < 45,
     once: "david_forward",
   },
   {
     message: "A Glassdoor review appeared. One star.",
     subtext: "\"Leadership is checked out. We're building a ghost ship.\"",
     effects: { relationships: -8, company: -3, energy: -3 },
-    condition: ({ dims, week }) => week >= 14 && dims.relationships < 30,
+    condition: ({ dims, week }) => week >= 7 && dims.relationships < 30,
     once: "glassdoor",
   },
   {
     message: "Marcus submitted a two-week notice.",
     subtext: "He's going to the competitor.",
     effects: { company: -12, relationships: -8, energy: -5 },
-    condition: ({ dims, week, pastChoices }) => week >= 10 && pastChoices.includes("Let him go") && dims.relationships < 35,
+    condition: ({ dims, week, pastChoices }) => week >= 5 && pastChoices.includes("Let him go") && dims.relationships < 35,
     once: "marcus_leaves",
   },
 
@@ -208,14 +210,14 @@ export const SURPRISE_EVENTS: SurpriseEvent[] = [
     message: "TechCrunch mentioned you in a roundup.",
     subtext: "Paragraph three. Your name was spelled wrong.",
     effects: { company: 3 },
-    condition: ({ week, dims }) => week >= 8 && dims.company > 45,
+    condition: ({ week, dims }) => week >= 4 && dims.company > 45,
     once: "techcrunch",
   },
   {
     message: "A co-founder you admire DM'd you on Twitter.",
     subtext: "\"Saw your product. Impressive. Let's talk.\"",
     effects: { energy: 8, company: 3, relationships: 3 },
-    condition: ({ week, dims }) => week >= 15 && dims.company > 50 && dims.integrity > 50,
+    condition: ({ week, dims }) => week >= 8 && dims.company > 50 && dims.integrity > 50,
     once: "founder_dm",
   },
 ];
@@ -272,21 +274,21 @@ export const MILESTONES: Milestone[] = [
     once: "arr_25",
   },
   {
-    message: "You survived a quarter.",
-    subtext: "13 weeks. 13 decisions. You're still here.",
-    condition: ({ week }) => week >= 13,
+    message: "You survived the honeymoon.",
+    subtext: "7 weeks. 7 decisions. Now the real game starts.",
+    condition: ({ week }) => week >= 8,
     once: "quarter",
   },
   {
-    message: "Half a year.",
-    subtext: "26 weeks in. Most founders don't make it this far.",
-    condition: ({ week }) => week >= 26,
+    message: "Halfway.",
+    subtext: "12 weeks in. Most founders don't make it this far.",
+    condition: ({ week }) => week >= 12,
     once: "half_year",
   },
   {
     message: "Everyone's still here.",
     subtext: "No one quit this month. That's rarer than you think.",
-    condition: ({ dims, week }) => week >= 16 && dims.relationships > 60 && dims.energy > 50,
+    condition: ({ dims, week }) => week >= 8 && dims.relationships > 60 && dims.energy > 50,
     once: "no_quit",
   },
   {
@@ -429,8 +431,8 @@ export function getTension(week: number, usedIndices: Set<number>, dims?: GameDi
     if (usedIndices.has(t.idx)) return false;
     // If tension requires a past choice, only include if that choice was made
     if (t.requires && !choiceSet.has(t.requires.choice)) return false;
-    // Fourth wall moments only appear in weeks 28-35 (one per game, mid-late Act 2)
-    if (t.fourthWall && (week < 28 || week > 35)) return false;
+    // Fourth wall moments only appear in weeks 14-17 (one per game, late Act 2)
+    if (t.fourthWall && (week < 14 || week > 17)) return false;
     return true;
   });
 
@@ -497,7 +499,7 @@ export function getTension(week: number, usedIndices: Set<number>, dims?: GameDi
     }
 
     // Fourth wall moments get a strong bonus when they're eligible — they should feel inevitable
-    if (t.fourthWall && week >= 28 && week <= 35) score += 10;
+    if (t.fourthWall && week >= 14 && week <= 17) score += 10;
 
     // Variety: slight random factor so it's not 100% deterministic
     score += Math.random() * 2;
@@ -515,22 +517,22 @@ export function getTension(week: number, usedIndices: Set<number>, dims?: GameDi
 export function checkEnding(state: { week: number; cash: number; arr: number; dims: GameDimensions }): Ending | null {
   const { week, cash, arr, dims } = state;
 
-  // Grace period: no catastrophic endings before week 8. Let the player feel the game first.
+  // Grace period: no catastrophic endings before week 4. Let the player feel the game first.
   // Cash can still run out (that's math, not drama) but dimension-based deaths need room to breathe.
-  if (week >= 8) {
+  if (week >= 4) {
     if (dims.energy <= 0) return { type: "burnout", label: "BURNED OUT", emoji: "🔥", line: `Burned out in week ${week}. Company was worth $${Math.round(arr / 10)}M without you.` };
     if (dims.integrity <= 0) return { type: "disgraced", label: "DISGRACED", emoji: "🪦", line: `Disgraced in week ${week}. The Glassdoor reviews wrote themselves.` };
   }
   if (cash <= 0) return { type: "bankrupt", label: "BANKRUPT", emoji: "💀", line: `Bankrupt in week ${week}.` };
-  if (week >= 12 && dims.relationships <= 10 && dims.company > 40) return { type: "board_removed", label: "BOARD REMOVED", emoji: "🚪", line: `Board removed you in week ${week}. Company was worth $${Math.round(arr / 8)}M.` };
+  if (week >= 6 && dims.relationships <= 10 && dims.company > 40) return { type: "board_removed", label: "BOARD REMOVED", emoji: "🚪", line: `Board removed you in week ${week}. Company was worth $${Math.round(arr / 8)}M.` };
   if (arr >= 25 && dims.integrity > 50 && dims.relationships > 40 && dims.energy > 30) return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${week} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
-  if (arr >= 15 && week >= 16) {
-    if (Math.random() < 0.12) return { type: "acquired", label: "ACQUIRED", emoji: "🤝", line: `Acquired for $${Math.round(arr * 2.2)}M in ${week} weeks.` };
+  if (arr >= 15 && week >= 10) {
+    if (Math.random() < 0.15) return { type: "acquired", label: "ACQUIRED", emoji: "🤝", line: `Acquired for $${Math.round(arr * 2.2)}M in ${week} weeks.` };
   }
   if (cash < 200 && arr > 5) return { type: "forced_sale", label: "FORCED SALE", emoji: "📉", line: `Forced sale at $${Math.round(arr * 0.8)}M in week ${week}. Took what you could get.` };
-  if (week >= 52) {
+  if (week >= TOTAL_WEEKS) {
     const val = Math.round(arr * 1.5);
-    return { type: "time_up", label: "TIME'S UP", emoji: "⏰", line: `52 weeks. Company valued at $${val}M. The story just... stopped.` };
+    return { type: "time_up", label: "TIME'S UP", emoji: "⏰", line: `${TOTAL_WEEKS} weeks. Company valued at $${val}M. The story just... stopped.` };
   }
   return null;
 }

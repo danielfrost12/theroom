@@ -627,7 +627,8 @@ export function getActTempo(act: 1 | 2 | 3) {
     breathe: 1800,              // short breathing moments
     compressDisplay: 1800,      // time skips feel light
     silence: 1200,              // brief pauses
-    compressChance: 0.50,       // more compression — Act 1 should fly
+    compressChance: 0.15,       // minimal compression — early weeks should HURT individually
+    noCompressBefore: 5,        // no compression at all before week 5
   };
   if (act === 2) return {
     narrativeTapDelay: 1800,    // heavier — let choices sink in
@@ -649,7 +650,7 @@ export function getActTempo(act: 1 | 2 | 3) {
 // Earned silence: after truly heavy choices, replace breathing moments with void
 // Returns true if this moment deserves darkness instead of a breathing quote
 export function shouldEarnSilence(week: number, stakes: string, isConsequence: boolean): boolean {
-  const act = week <= 15 ? 1 : week <= 35 ? 2 : 3;
+  const act = week <= 7 ? 1 : week <= 17 ? 2 : 3;
   // Act 1: never — you're still learning
   if (act === 1) return false;
   // Act 2: only after consequence tensions
@@ -661,14 +662,14 @@ export function shouldEarnSilence(week: number, stakes: string, isConsequence: b
 // Dashboard visibility by act — the HUD dissolves as you go deeper
 // Returns opacity values for different dashboard sections
 export function getDashboardVisibility(week: number) {
-  const act = week <= 15 ? 1 : week <= 35 ? 2 : 3;
+  const act = week <= 7 ? 1 : week <= 17 ? 2 : 3;
   if (act === 1) return {
     header: 1.0,       // full header
     dims: 1.0,         // all dim bars visible
     dimValues: true,    // show numeric values
     timeline: 1.0,     // full timeline
     cash: 1.0,         // cash visible
-    weekCount: true,    // show "Week X of 52"
+    weekCount: true,    // show "Week X of 24"
     overall: 1.0,      // full dashboard opacity
   };
   if (act === 2) return {
@@ -686,8 +687,8 @@ export function getDashboardVisibility(week: number) {
     dims: 0.5,         // bars barely visible
     dimValues: false,   // no more numbers — you feel it, you don't measure it
     timeline: 0.3,     // timeline almost gone
-    cash: week > 45 ? 0.3 : 0.5,  // cash fades further in final weeks
-    weekCount: false,   // no more "Week X of 52"
+    cash: week > 21 ? 0.3 : 0.5,  // cash fades further in final weeks
+    weekCount: false,   // no more "Week X of 24"
     overall: 0.5,       // the whole dashboard is a ghost
   };
 }
