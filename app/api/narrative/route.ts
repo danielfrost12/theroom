@@ -5,19 +5,27 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
 function buildScenePrompt(context: string, choice: string, dims: { company: number; relationships: number; energy: number; integrity: number }, week: number, companyName: string): string {
   const dimSummary = `Company: ${dims.company}/100, Relationships: ${dims.relationships}/100, Energy: ${dims.energy}/100, Integrity: ${dims.integrity}/100`;
-  return `You are the narrator of a startup simulation game called "The Room." Write a 3-4 sentence consequence of a CEO's decision. Be specific — name characters (Marcus the engineer, Priya the co-founder, Elena head of sales, David the investor). Be darkly funny. Write like a sharp magazine profile, not a game.
+  const act = week <= 15 ? 'Act 1 (Honeymoon — optimism, building)' : week <= 35 ? 'Act 2 (The Grind — cracks show, fatigue)' : 'Act 3 (The Reckoning — legacy, cost)';
+  return `You are the narrator of "The Room," a startup simulation. Write in SECOND PERSON, PRESENT TENSE. "You chose Elena. The room goes quiet." Not "The CEO decided."
 
-Company: ${companyName}. Week ${week} of 52.
+Voice rules:
+- Always "you" — never "the CEO" or third person
+- Present tense — "Marcus looks up" not "Marcus looked up"
+- Name characters: Marcus (engineer), Priya (co-founder), Elena (sales), David (investor)
+- Write like a sharp magazine profile, darkly funny, specific
+- 3-4 sentences. The last sentence should linger.
+
+Company: ${companyName}. Week ${week} of 52. ${act}.
 Situation: ${context}
-CEO chose: ${choice}
+You chose: ${choice}
 Current state: ${dimSummary}
 
-Write ONLY the 3-4 sentence consequence. No preamble. No labels. Just the scene.`;
+Write ONLY the consequence. No preamble. No labels. Just the scene.`;
 }
 
 function buildEndgamePrompt(ending: { type: string; line: string }, companyName: string, decisions: { week: number; context: string; choice: string }[], dims: { company: number; relationships: number; energy: number; integrity: number }): string {
-  const decisionSummary = decisions.slice(-8).map(d => `Week ${d.week}: "${d.context}" → chose ${d.choice}`).join("\n");
-  return `You are the narrator of "The Room," a startup game. The game just ended.
+  const decisionSummary = decisions.slice(-8).map(d => `Week ${d.week}: "${d.context}" → chose "${d.choice}"`).join("\n");
+  return `You are the narrator of "The Room," a startup simulation. Write in second person. "You built something" not "The CEO built something."
 
 Company: ${companyName}
 Ending: ${ending.type} — ${ending.line}
@@ -27,8 +35,8 @@ Recent decisions:
 ${decisionSummary}
 
 Write TWO things:
-1. HEADLINE: One sentence (under 15 words) about the most desperate or bold moment in their journey. Professionally shareable — funny and impressive, not personal/inappropriate. Something a founder would proudly post.
-2. MIRROR: One sentence about their leadership pattern based on their choices. Not preachy — observational. The kind of thing that makes someone pause before sharing.
+1. HEADLINE: One sentence (under 15 words) — the most desperate or bold moment of the run. Professionally shareable, darkly funny. Something a founder would proudly post. Second person.
+2. MIRROR: One sentence about the player's leadership pattern. Observational, not preachy. The kind of line that makes someone pause. Second person present tense.
 
 Format:
 HEADLINE: [your headline]

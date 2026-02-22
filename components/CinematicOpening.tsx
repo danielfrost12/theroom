@@ -47,7 +47,7 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
 
   const handleChoice = (choice: string) => {
     setChoiceMade(choice);
-    setTimeout(() => setShowNameInput(true), 1500);
+    setTimeout(() => setShowNameInput(true), 4500);
   };
 
   const handleStart = () => {

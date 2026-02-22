@@ -1,5 +1,19 @@
 import { GameDimensions, Ending, IndexedTension, Decision } from './types';
-import { TENSIONS, BREATHING_MOMENTS } from './constants';
+import { TENSIONS, BREATHING_MOMENTS, COMPRESSION_LINES } from './constants';
+
+// --- 3-ACT STRUCTURE ---
+// The game has three acts. The player never sees the labels — they feel the shift.
+// Act 1: The Honeymoon (weeks 1-15) — optimism, building, early wins
+// Act 2: The Grind (weeks 16-35) — cracks show, fatigue, harder choices
+// Act 3: The Reckoning (weeks 36-52) — legacy, cost, what it meant
+
+export type Act = 1 | 2 | 3;
+
+export function getAct(week: number): Act {
+  if (week <= 15) return 1;
+  if (week <= 35) return 2;
+  return 3;
+}
 
 // --- ARCHETYPE DETECTION ---
 // Your pattern of choices reveals who you are as a leader.
@@ -309,26 +323,95 @@ export function getTensionStakes(t: IndexedTension, dims: GameDimensions): Tensi
 }
 
 export function getSceneForState(dims: GameDimensions, week: number): string {
+  const act = getAct(week);
+
+  // Crisis overrides — these always win regardless of act
   if (dims.energy < 25) return "apartment_night";
   if (dims.integrity < 25) return "bar";
   if (dims.relationships < 30) return "park_bench";
-  if (week > 40) return "rooftop";
+
+  // Success overrides
   if (dims.company > 75 && dims.energy > 60) return "coworking";
-  const cycle = week % 5;
-  if (cycle === 0) return "office_morning";
-  if (cycle === 1) return "coffee_shop";
-  if (cycle === 2) return "boardroom";
-  if (cycle === 3) return "office_night";
-  return "elevator";
+
+  // Act-specific scene cycles — the world around you shifts
+  if (act === 1) {
+    // Honeymoon: bright, energetic spaces
+    const cycle = week % 4;
+    if (cycle === 0) return "office_morning";
+    if (cycle === 1) return "coffee_shop";
+    if (cycle === 2) return "coworking";
+    return "elevator";
+  }
+
+  if (act === 2) {
+    // The Grind: darker, more enclosed, pressure mounting
+    const cycle = week % 5;
+    if (cycle === 0) return "office_night";
+    if (cycle === 1) return "boardroom";
+    if (cycle === 2) return "coffee_shop";
+    if (cycle === 3) return "elevator";
+    return "office_morning";
+  }
+
+  // Act 3: The Reckoning — reflective, final spaces
+  const cycle = week % 4;
+  if (cycle === 0) return "rooftop";
+  if (cycle === 1) return "boardroom";
+  if (cycle === 2) return "office_night";
+  return "apartment_night";
 }
 
-export function getBreathingMoment(dims: GameDimensions): string {
+export function getBreathingMoment(dims: GameDimensions, week?: number): string {
   const avg = (dims.company + dims.relationships + dims.energy + dims.integrity) / 4;
+  const act = week ? getAct(week) : 1;
+
+  // Act coloring: same dim pools but weighted differently
   let pool: string[];
-  if (avg > 70) pool = BREATHING_MOMENTS.good;
-  else if (avg > 50) pool = BREATHING_MOMENTS.neutral;
-  else if (avg > 30) pool = BREATHING_MOMENTS.bad;
-  else pool = BREATHING_MOMENTS.crisis;
+  if (act === 3) {
+    // Reckoning: even "good" moments feel heavy
+    if (avg > 60) pool = BREATHING_MOMENTS.neutral;
+    else if (avg > 40) pool = BREATHING_MOMENTS.bad;
+    else pool = BREATHING_MOMENTS.crisis;
+  } else if (act === 2) {
+    // Grind: threshold drops — optimism fades faster
+    if (avg > 65) pool = BREATHING_MOMENTS.good;
+    else if (avg > 45) pool = BREATHING_MOMENTS.neutral;
+    else if (avg > 25) pool = BREATHING_MOMENTS.bad;
+    else pool = BREATHING_MOMENTS.crisis;
+  } else {
+    // Honeymoon: original thresholds
+    if (avg > 70) pool = BREATHING_MOMENTS.good;
+    else if (avg > 50) pool = BREATHING_MOMENTS.neutral;
+    else if (avg > 30) pool = BREATHING_MOMENTS.bad;
+    else pool = BREATHING_MOMENTS.crisis;
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// --- COMPRESSION SUMMARIES ---
+// One line per skipped week, keyed to game state. Not random — specific.
+export function getCompressionLine(dims: GameDimensions, week: number, arr: number): string {
+  const act = getAct(week);
+  const avg = (dims.company + dims.relationships + dims.energy + dims.integrity) / 4;
+
+  // Pick from act + state specific pool
+  let pool: string[];
+  if (act === 1) {
+    pool = avg > 55 ? COMPRESSION_LINES.act1_good : COMPRESSION_LINES.act1_rough;
+  } else if (act === 2) {
+    pool = avg > 50 ? COMPRESSION_LINES.act2_holding : COMPRESSION_LINES.act2_grinding;
+  } else {
+    pool = avg > 45 ? COMPRESSION_LINES.act3_hope : COMPRESSION_LINES.act3_heavy;
+  }
+
+  // Dimension crisis overrides
+  if (dims.energy < 25) pool = COMPRESSION_LINES.burnout;
+  else if (dims.relationships < 30) pool = COMPRESSION_LINES.isolation;
+  else if (dims.integrity < 30) pool = COMPRESSION_LINES.compromise;
+
+  // ARR milestone override
+  if (arr > 30 && act >= 2) pool = COMPRESSION_LINES.momentum;
+
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -387,6 +470,24 @@ export function getTension(week: number, usedIndices: Set<number>, dims?: GameDi
       score += archetypeBias[t.category];
     }
 
+    // Act-based tension bias — each act has a different emotional center
+    const act = getAct(week);
+    if (act === 1) {
+      // Honeymoon: product and strategy tensions dominate — building phase
+      if (t.category === 'product') score += 2;
+      if (t.category === 'strategy') score += 1;
+    } else if (act === 2) {
+      // Grind: people and values tensions rise — cracks show
+      if (t.category === 'people') score += 2;
+      if (t.category === 'values') score += 2;
+      if (t.category === 'life') score += 1;
+    } else {
+      // Reckoning: intimate and values — legacy, cost, what it meant
+      if (t.category === 'values') score += 3;
+      if (t.category === 'life') score += 2;
+      if (t.format === 'intimate') score += 2;
+    }
+
     // Variety: slight random factor so it's not 100% deterministic
     score += Math.random() * 2;
 
@@ -411,11 +512,11 @@ export function checkEnding(state: { week: number; cash: number; arr: number; di
   }
   if (cash <= 0) return { type: "bankrupt", label: "BANKRUPT", emoji: "💀", line: `Bankrupt in week ${week}.` };
   if (week >= 12 && dims.relationships <= 10 && dims.company > 40) return { type: "board_removed", label: "BOARD REMOVED", emoji: "🚪", line: `Board removed you in week ${week}. Company was worth $${Math.round(arr / 8)}M.` };
-  if (arr >= 60 && dims.integrity > 50 && dims.relationships > 40 && dims.energy > 30) return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${week} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
-  if (arr >= 40 && week >= 16) {
+  if (arr >= 25 && dims.integrity > 50 && dims.relationships > 40 && dims.energy > 30) return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${week} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
+  if (arr >= 15 && week >= 16) {
     if (Math.random() < 0.12) return { type: "acquired", label: "ACQUIRED", emoji: "🤝", line: `Acquired for $${Math.round(arr * 2.2)}M in ${week} weeks.` };
   }
-  if (cash < 200 && arr > 15) return { type: "forced_sale", label: "FORCED SALE", emoji: "📉", line: `Forced sale at $${Math.round(arr * 0.8)}M in week ${week}. Took what you could get.` };
+  if (cash < 200 && arr > 5) return { type: "forced_sale", label: "FORCED SALE", emoji: "📉", line: `Forced sale at $${Math.round(arr * 0.8)}M in week ${week}. Took what you could get.` };
   if (week >= 52) {
     const val = Math.round(arr * 1.5);
     return { type: "time_up", label: "TIME'S UP", emoji: "⏰", line: `52 weeks. Company valued at $${val}M. The story just... stopped.` };

@@ -484,6 +484,82 @@ export const TENSIONS: Tension[] = [
   },
 ];
 
+// --- COMPRESSION SUMMARIES ---
+// One line per skipped week, keyed to game state + act. Handwritten, not AI-generated.
+export const COMPRESSION_LINES: Record<string, string[]> = {
+  act1_good: [
+    "Elena closed two deals. Marcus pushed a clean build.",
+    "The office had a good hum. Someone brought donuts.",
+    "Three new hires started. The energy was contagious.",
+    "David sent a thumbs up emoji. No context. Good sign.",
+    "Priya presented to the team. Standing ovation.",
+    "Product velocity was the highest it's been.",
+  ],
+  act1_rough: [
+    "Onboarding was rocky. Two hires already seem wrong.",
+    "The product demo crashed in front of a prospect.",
+    "Marcus and Priya had a disagreement about priorities.",
+    "You spent the week in back-to-back meetings. No building.",
+    "A customer churned. The support ticket went unanswered.",
+  ],
+  act2_holding: [
+    "The team found its rhythm. Quiet weeks. Good weeks.",
+    "Elena hit quota three weeks early. She didn't celebrate.",
+    "Board prep took the whole week. David had follow-up questions.",
+    "A competitor launched something mediocre. You felt relieved, then guilty.",
+    "Priya reorganized the roadmap. Nobody complained.",
+  ],
+  act2_grinding: [
+    "Three people asked for raises. You could only say yes to one.",
+    "The all-hands was quiet. Too many open laptops.",
+    "Marcus went on PTO. The deploys slowed immediately.",
+    "You ate lunch at your desk every day this week.",
+    "An engineer asked if the company was okay. You said yes too fast.",
+  ],
+  act3_hope: [
+    "The product started selling itself. Inbound was up 40%.",
+    "You caught yourself smiling at your desk for no reason.",
+    "David's tone shifted. He started talking about 'the long game.'",
+    "An old customer emailed to say thank you. No ask attached.",
+    "The team shipped without you asking. That's when you knew.",
+  ],
+  act3_heavy: [
+    "You sat in the parking lot for ten minutes before going in.",
+    "The office felt smaller. Or maybe you just needed air.",
+    "Your co-founder's birthday was last week. You forgot.",
+    "The financials looked fine. You didn't feel fine.",
+    "Someone left a resignation letter on your desk. You read it twice.",
+  ],
+  burnout: [
+    "You slept at the office. Again.",
+    "Your hands were shaking during the morning standup.",
+    "You cancelled a doctor's appointment. Third time this month.",
+    "The coffee didn't help anymore. Nothing helped.",
+    "You stared at your screen for forty minutes without typing.",
+  ],
+  isolation: [
+    "Lunch was quiet. Nobody invited you.",
+    "Marcus walked past your office without looking up.",
+    "The team Slack had a channel you weren't in.",
+    "Priya stopped scheduling 1:1s. You didn't ask why.",
+    "The only notifications were from investors.",
+  ],
+  compromise: [
+    "You deleted an email before reading it. You knew what it said.",
+    "The numbers looked good. The method didn't.",
+    "Someone asked how you sleep at night. You laughed. They didn't.",
+    "The press release said 'industry-leading.' You wrote it yourself.",
+    "An old mentor called. You let it go to voicemail.",
+  ],
+  momentum: [
+    "Revenue was up again. The graphs were pointing right.",
+    "A Series B term sheet arrived. You didn't open it immediately.",
+    "The pipeline was full. For the first time, you weren't worried about money.",
+    "A major publication asked for an interview. You said next month.",
+    "The board meeting lasted twelve minutes. That's a good sign.",
+  ],
+};
+
 export const FONTS = {
   display: "'DM Sans', 'Helvetica Neue', sans-serif",
   body: "'DM Sans', 'Helvetica Neue', sans-serif",
