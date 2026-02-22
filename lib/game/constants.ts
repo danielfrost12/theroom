@@ -623,12 +623,13 @@ export const TEMPO = {
 // Act 3: vast, silences expand, less text, more void
 export function getActTempo(act: 1 | 2 | 3) {
   if (act === 1) return {
-    narrativeTapDelay: 1200,    // quick — keep the energy up
-    breathe: 1800,              // short breathing moments
+    narrativeTapDelay: 800,     // fast — you're falling forward
+    breathe: 1200,              // breathing moments are brief
     compressDisplay: 1800,      // time skips feel light
     silence: 1200,              // brief pauses
     compressChance: 0.15,       // minimal compression — early weeks should HURT individually
     noCompressBefore: 5,        // no compression at all before week 5
+    skipBreathingBefore: 4,     // no breathing moments weeks 1-3 — just choice → consequence → choice
   };
   if (act === 2) return {
     narrativeTapDelay: 1800,    // heavier — let choices sink in

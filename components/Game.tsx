@@ -202,7 +202,13 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     const silenceEarned = shouldEarnSilence(week, stakes, isConsequence);
     setEarnedSilence(silenceEarned);
 
-    if (!silenceEarned) {
+    // Early Act 1: skip breathing moments — fall forward into the next choice
+    const choiceTempo = getActTempo(getAct(week));
+    const skipBreathing = choiceTempo.skipBreathingBefore && week < choiceTempo.skipBreathingBefore;
+
+    if (skipBreathing) {
+      setShowBreathing(false);
+    } else if (!silenceEarned) {
       setShowBreathing(true);
       setBreathingMoment(getBreathingMoment(dims, week));
     } else {
