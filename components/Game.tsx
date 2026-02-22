@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { FONTS, COLORS, TEMPO, getActTempo, shouldEarnSilence, getDashboardVisibility } from '@/lib/game/constants';
+import { FONTS, COLORS, TEMPO, getActTempo, shouldEarnSilence, getDashboardVisibility, weekDotColor } from '@/lib/game/constants';
 import { GameDimensions, Ending, Decision, IndexedTension, TensionFormat } from '@/lib/game/types';
 import { getSceneForState, getBreathingMoment, getCompressionLine, getAct, getTension, checkEnding, checkSurpriseEvent, checkMilestone, getTensionStakes, detectArchetype, getArchetypeBias, type SurpriseEvent, type Milestone, type TensionStakes } from '@/lib/game/engine';
 import { generateNarrative } from '@/lib/ai/narrative';
@@ -431,22 +431,33 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
         display: "flex", flexDirection: "column",
       }}>
 
-        {/* Progress Gravity — the ONE signal that never disappears.
-            Even when the dashboard dissolves, you know how far you've come. */}
-        <div style={{
-          textAlign: "right",
-          marginBottom: 8,
-          opacity: week <= 7 ? 0.3 : week <= 17 ? 0.25 : 0.2,
-          transition: "opacity 2s ease",
-        }}>
-          <span style={{
-            fontFamily: FONTS.mono,
-            fontSize: 11,
-            color: "rgba(255,255,255,0.5)",
-            letterSpacing: "1px",
-          }}>
-            {week} / 24
-          </span>
+        {/* Progress Gravity — 24 dots. No numbers. You feel where you are.
+            Filled dots carry the color of what happened that week. */}
+        <div
+          aria-label={`Week ${week} of 24`}
+          style={{
+            display: "flex", justifyContent: "flex-end", gap: 3,
+            marginBottom: 8,
+            opacity: week <= 7 ? 0.6 : week <= 17 ? 0.5 : 0.4,
+            transition: "opacity 2s ease",
+          }}
+        >
+          {Array.from({ length: 24 }).map((_, i) => {
+            const isFilled = i < weekLog.length;
+            const isCurrent = i === weekLog.length;
+            return (
+              <div key={i} style={{
+                width: 5, height: 5, borderRadius: 1.5,
+                background: isFilled
+                  ? weekDotColor(weekLog[i])
+                  : isCurrent
+                    ? "rgba(255,238,210,0.4)"
+                    : "rgba(255,255,255,0.06)",
+                transition: "background 0.5s ease",
+                animation: isCurrent ? "pulse 2.5s infinite" : "none",
+              }} />
+            );
+          })}
         </div>
 
         {/* Dashboard — dissolves by act, hidden during fourth-wall moments */}
@@ -696,15 +707,18 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             )}
             {waitingForTap && (
               <div style={{
-                marginTop: 16, textAlign: "center",
-                opacity: 0, animation: "fadeUp 0.6s ease 0.3s forwards",
+                marginTop: 18, textAlign: "center",
+                opacity: 0, animation: "fadeUp 0.5s ease 0.2s forwards",
               }}>
-                <div style={{
-                  width: 20, height: 2,
-                  background: "rgba(255,255,255,0.15)",
-                  margin: "0 auto",
-                  animation: "pulse 2s infinite",
-                }} />
+                <span style={{
+                  fontSize: 12,
+                  color: COLORS.warmMuted,
+                  fontFamily: FONTS.mono,
+                  letterSpacing: "1px",
+                  animation: "pulse 3s ease-in-out infinite",
+                }}>
+                  tap to continue
+                </span>
               </div>
             )}
           </div>
