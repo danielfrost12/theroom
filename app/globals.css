@@ -107,3 +107,9 @@ input, select, textarea {
   0%, 70% { opacity: 0; transform: translateY(8px); }
   100% { opacity: 1; transform: translateY(0); }
 }
+
+/* Background breathing — the room is alive */
+@keyframes breathe {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+}

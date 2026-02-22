@@ -222,7 +222,7 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                 <div style={{
                   display: "flex", gap: 12, justifyContent: "center",
                 }}>
-                  {["TRUST HIM", "TRUST YOURSELF"].map((choice, i) => (
+                  {["Trust Marcus", "Trust yourself"].map((choice, i) => (
                     <button
                       key={choice}
                       onClick={() => handleChoice(choice)}
@@ -275,7 +275,7 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                 fontStyle: "italic",
                 lineHeight: 1.7,
               }}>
-                {choiceMade === "TRUST HIM"
+                {choiceMade === "Trust Marcus"
                   ? "Marcus exhaled. For the first time in weeks, someone listened. Priya raised an eyebrow but said nothing. The rebuild started that afternoon."
                   : "The room went quiet. Marcus looked at his screen. Priya leaned forward — she'd been waiting for this. David would hear about it by tomorrow."}
               </div>

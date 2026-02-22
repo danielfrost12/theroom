@@ -74,65 +74,289 @@ export const BREATHING_MOMENTS: Record<string, string[]> = {
 
 export const TENSIONS: Tension[] = [
   // --- PRODUCT ---
-  // Design principle: energy is the dimension you TRADE against other things.
-  // Some choices save energy. Some destroy it. No dimension should drain on both sides of every tension.
-  { left: "TRUST HIM", right: "TRUST YOURSELF", context: "Marcus says the competitor's product is better than yours. He wants to rebuild.", leftEffect: { company: -12, relationships: 8, energy: 3, integrity: 5 }, rightEffect: { company: 5, relationships: -15, energy: -8, integrity: -3 }, category: "product" },
-  { left: "SHIP IT", right: "FIX IT", context: "The product has a bug you found an hour ago. The launch is in 30 minutes.", leftEffect: { company: 10, relationships: -8, energy: 3, integrity: -15 }, rightEffect: { company: -12, relationships: 3, energy: -8, integrity: 8 }, category: "product", leftForeshadow: "The bug is live now. Maybe nobody will notice." },
-  { left: "PIVOT", right: "DOUBLE DOWN", context: "Your market is shrinking. But your existing customers love you. A new market is wide open.", leftEffect: { company: 5, relationships: -12, energy: -10, integrity: -5 }, rightEffect: { company: -8, relationships: 3, energy: 3, integrity: 5 }, category: "product" },
-  { left: "COPY THEM", right: "IGNORE THEM", context: "Your competitor just launched the feature your users have been begging for. You could build it in two weeks.", leftEffect: { company: 8, relationships: -5, energy: -10, integrity: -12 }, rightEffect: { company: -10, relationships: 3, energy: 5, integrity: 8 }, category: "product" },
+  // Every context is a SCENE, not a summary. You're in the room. You can smell the coffee.
+  // Choice labels are personal, specific, lowercase — they feel like decisions, not commands.
+  {
+    left: "Let Marcus rebuild",
+    right: "Override him",
+    context: "Marcus pulled up the competitor's product on the big screen. The room went quiet. His version is cleaner, faster, and they shipped it last Tuesday. He's asking for two weeks to start over.",
+    leftEffect: { company: -12, relationships: 8, energy: 3, integrity: 5 },
+    rightEffect: { company: 5, relationships: -15, energy: -8, integrity: -3 },
+    category: "product",
+    leftForeshadow: "Marcus hasn't coded this fast in months.",
+  },
+  {
+    left: "Ship it now",
+    right: "Delay the launch",
+    context: "You're staring at a bug in the login flow. It'll break for maybe 2% of users. The launch email goes out in 30 minutes. Marketing has been teasing this for three weeks.",
+    leftEffect: { company: 10, relationships: -8, energy: 3, integrity: -15 },
+    rightEffect: { company: -12, relationships: 3, energy: -8, integrity: 8 },
+    category: "product",
+    leftForeshadow: "The bug is live now. Maybe nobody will notice.",
+  },
+  {
+    left: "Chase the new market",
+    right: "Stay with who loves you",
+    context: "Your customer NPS is 72. But the market is shrinking by 8% a quarter. Priya showed you a deck — there's an adjacent market ten times bigger. You'd be starting from zero.",
+    leftEffect: { company: 5, relationships: -12, energy: -10, integrity: -5 },
+    rightEffect: { company: -8, relationships: 3, energy: 3, integrity: 5 },
+    category: "product",
+    leftForeshadow: "Your best customers got an email today. They don't know yet.",
+  },
+  {
+    left: "Build their feature",
+    right: "Build yours instead",
+    context: "Your competitor launched smart notifications yesterday. Your Slack is full of users asking when you'll have it. But your roadmap has something better — something they haven't thought of yet.",
+    leftEffect: { company: 8, relationships: -5, energy: -10, integrity: -12 },
+    rightEffect: { company: -10, relationships: 3, energy: 5, integrity: 8 },
+    category: "product",
+  },
 
   // --- PEOPLE ---
-  { left: "KEEP THEM", right: "LET THEM GO", context: "Your first engineer isn't keeping up. They were here before anyone else.", leftEffect: { company: -15, relationships: 5, energy: 3, integrity: 3 }, rightEffect: { company: 8, relationships: -18, energy: -5, integrity: -5 }, category: "people", rightForeshadow: "The team watched Marcus leave. They'll remember." },
-  { left: "FORGIVE", right: "CONFRONT", context: "Your co-founder went behind your back and talked to the board. She says she was trying to help.", leftEffect: { company: -5, relationships: 5, energy: 5, integrity: -10 }, rightEffect: { company: -3, relationships: -15, energy: -8, integrity: 10 }, category: "people" },
-  { left: "HIRE FAST", right: "HIRE RIGHT", context: "You need a head of sales yesterday. One candidate is available now. Another is perfect but available in 6 weeks.", leftEffect: { company: 8, relationships: -8, energy: 3, integrity: -8 }, rightEffect: { company: -10, relationships: 3, energy: -8, integrity: 5 }, category: "people" },
-  { left: "FRIEND FIRST", right: "CEO FIRST", context: "Your best friend at the company isn't performing. Everyone knows it.", leftEffect: { company: -15, relationships: 8, energy: 3, integrity: -8 }, rightEffect: { company: 8, relationships: -18, energy: -5, integrity: 3 }, category: "people", rightForeshadow: "Your phone buzzed. You didn't look." },
+  {
+    left: "Give him more time",
+    right: "Let him go",
+    context: "Marcus was employee #1. He stayed when nobody else would. But his last three pull requests were rejected, and the junior engineers are fixing his code. He knows you know.",
+    leftEffect: { company: -15, relationships: 5, energy: 3, integrity: 3 },
+    rightEffect: { company: 8, relationships: -18, energy: -5, integrity: -5 },
+    category: "people",
+    rightForeshadow: "The team watched him pack his desk. Nobody said goodbye.",
+  },
+  {
+    left: "Let it go",
+    right: "Have the conversation",
+    context: "Priya went behind your back. She called David — your investor — to 'give him context' before the board meeting. She says she was protecting you. David now has a version of events you didn't write.",
+    leftEffect: { company: -5, relationships: 5, energy: 5, integrity: -10 },
+    rightEffect: { company: -3, relationships: -15, energy: -8, integrity: 10 },
+    category: "people",
+    rightForeshadow: "Priya closed her laptop and left early. She didn't say goodnight.",
+  },
+  {
+    left: "Hire the one available now",
+    right: "Wait for the right one",
+    context: "You need a head of sales. Your pipeline is dying. One candidate can start Monday — decent, not great. The candidate you actually want is wrapping up somewhere else and won't be free for six weeks.",
+    leftEffect: { company: 8, relationships: -8, energy: 3, integrity: -8 },
+    rightEffect: { company: -10, relationships: 3, energy: -8, integrity: 5 },
+    category: "people",
+  },
+  {
+    left: "Protect the friendship",
+    right: "Do what a CEO would do",
+    context: "Your best friend at the company — the one who moved across the country to join you — is the weakest performer on the team. Everyone can see it. Nobody will say it.",
+    leftEffect: { company: -15, relationships: 8, energy: 3, integrity: -8 },
+    rightEffect: { company: 8, relationships: -18, energy: -5, integrity: 3 },
+    category: "people",
+    rightForeshadow: "Your phone buzzed three times that night. You didn't look.",
+  },
 
   // --- VALUES ---
-  { left: "PRINCIPLES", right: "PROFITS", context: "A massive client wants a feature that contradicts your product vision. The contract is $800K.", leftEffect: { company: -15, relationships: -5, energy: 3, integrity: 10 }, rightEffect: { company: 12, relationships: -3, energy: -5, integrity: -15 }, category: "values" },
-  { left: "TRANSPARENT", right: "PROTECT THEM", context: "Runway is 4 months. The team doesn't know. Morale is high.", leftEffect: { company: -8, relationships: 3, energy: -5, integrity: 10 }, rightEffect: { company: 3, relationships: -10, energy: 5, integrity: -15 }, category: "values", rightForeshadow: "Secrets have weight. You can feel it in the room." },
-  { left: "APOLOGIZE", right: "STAND FIRM", context: "You made a call that backfired. The team is angry. But you still believe it was right.", leftEffect: { company: -8, relationships: 8, energy: 3, integrity: -8 }, rightEffect: { company: 3, relationships: -15, energy: -8, integrity: 8 }, category: "values" },
-  { left: "SHARE CREDIT", right: "TAKE CREDIT", context: "The feature that saved the quarter was your idea. But your engineer built it. The board wants to know who's responsible.", leftEffect: { company: -8, relationships: 10, energy: 3, integrity: 8 }, rightEffect: { company: 8, relationships: -15, energy: 3, integrity: -12 }, category: "values" },
-  { left: "BE HONEST", right: "BUY TIME", context: "Your investor asks if you'll hit Q3 targets. You won't. But Q4 looks strong.", leftEffect: { company: -12, relationships: 5, energy: 3, integrity: 12 }, rightEffect: { company: 5, relationships: -8, energy: -5, integrity: -18 }, category: "values", rightForeshadow: "David nodded. But he wrote something down." },
-  { left: "REPORT IT", right: "BURY IT", context: "You found a data breach. No users noticed. Disclosing it tanks your Series B.", leftEffect: { company: -18, relationships: 3, energy: 3, integrity: 12 }, rightEffect: { company: 5, relationships: -5, energy: -8, integrity: -20 }, category: "values", rightForeshadow: "The log file is still there. Somewhere." },
+  {
+    left: "Decline the contract",
+    right: "Take the money",
+    context: "A Fortune 500 wants your product — but with their branding, their data terms, and a feature that bends your architecture. The contract is $800K. Your team would have to stop everything else for two months.",
+    leftEffect: { company: -15, relationships: -5, energy: 3, integrity: 10 },
+    rightEffect: { company: 12, relationships: -3, energy: -5, integrity: -15 },
+    category: "values",
+  },
+  {
+    left: "Tell the team the truth",
+    right: "Keep it to yourself",
+    context: "Runway is 4 months. The team doesn't know — they think the raise is a formality. Morale is the highest it's ever been. Priya just posted on Slack about how excited she is for Q3.",
+    leftEffect: { company: -8, relationships: 3, energy: -5, integrity: 10 },
+    rightEffect: { company: 3, relationships: -10, energy: 5, integrity: -15 },
+    category: "values",
+    rightForeshadow: "Secrets have weight. You can feel it when you walk into the room.",
+  },
+  {
+    left: "Say you were wrong",
+    right: "Hold your ground",
+    context: "The feature you championed against everyone's advice just cost the company its second-biggest client. The team is quiet in a way that feels loud. Priya won't look at you.",
+    leftEffect: { company: -8, relationships: 8, energy: 3, integrity: -8 },
+    rightEffect: { company: 3, relationships: -15, energy: -8, integrity: 8 },
+    category: "values",
+    leftForeshadow: "The room exhaled when you said it. Something shifted.",
+  },
+  {
+    left: "Credit the engineer",
+    right: "Take it yourself",
+    context: "The feature that saved the quarter was your idea — the architecture, the positioning, the urgency. But your engineer built it in 72 hours of straight coding. The board asks: 'Whose work was this?'",
+    leftEffect: { company: -8, relationships: 10, energy: 3, integrity: 8 },
+    rightEffect: { company: 8, relationships: -15, energy: 3, integrity: -12 },
+    category: "values",
+  },
+  {
+    left: "Tell him the truth",
+    right: "Buy yourself a quarter",
+    context: "David leans forward on the Zoom. 'Will you hit Q3 numbers?' You won't — you're 30% behind. But the pipeline looks strong for Q4. He's deciding whether to lead your next round.",
+    leftEffect: { company: -12, relationships: 5, energy: 3, integrity: 12 },
+    rightEffect: { company: 5, relationships: -8, energy: -5, integrity: -18 },
+    category: "values",
+    rightForeshadow: "David nodded. But he wrote something down.",
+  },
+  {
+    left: "Disclose the breach",
+    right: "Fix it quietly",
+    context: "3am. You're staring at a log file. Someone accessed 12,000 user records through an API endpoint that should have been locked. No one noticed. Disclosing this kills your Series B. Burying it might kill your sleep.",
+    leftEffect: { company: -18, relationships: 3, energy: 3, integrity: 12 },
+    rightEffect: { company: 5, relationships: -5, energy: -8, integrity: -20 },
+    category: "values",
+    rightForeshadow: "The log file is still there. Somewhere.",
+  },
 
   // --- STRATEGY ---
-  { left: "TAKE THE MEETING", right: "SKIP IT", context: "An acquirer wants to talk. Your team just hit their best quarter. Taking the meeting might distract everyone.", leftEffect: { company: 5, relationships: -12, energy: -8, integrity: -5 }, rightEffect: { company: -5, relationships: 3, energy: 5, integrity: 5 }, category: "strategy", leftForeshadow: "You blocked your calendar. Priya asked why." },
-  { left: "SPEND IT", right: "SAVE IT", context: "You have $1.2M left. A marketing agency guarantees 10x pipeline. Your engineer needs a hire to stop burning out.", leftEffect: { company: 8, relationships: -8, energy: -5, integrity: -5 }, rightEffect: { company: -8, relationships: 3, energy: 5, integrity: 3 }, category: "strategy" },
-  { left: "RAISE MONEY", right: "STAY LEAN", context: "An investor offers $5M at a valuation you don't love. You have 8 months of runway.", leftEffect: { company: 10, relationships: -10, energy: -5, integrity: -8 }, rightEffect: { company: -5, relationships: 3, energy: 3, integrity: 8 }, category: "strategy", rightForeshadow: "The bank balance doesn't lie. The clock is louder now." },
-  { left: "ACCEPT", right: "NEGOTIATE", context: "An acquisition offer: $45M. You think it could be $80M in a year. Your team is tired.", leftEffect: { company: -3, relationships: 5, energy: 8, integrity: -5 }, rightEffect: { company: 5, relationships: -12, energy: -12, integrity: -3 }, category: "strategy" },
+  {
+    left: "Take the meeting",
+    right: "Decline",
+    context: "A VP at Google wants to 'explore synergies.' Your team just shipped the best product of their lives. You know what 'explore synergies' means. Taking the meeting changes what you think about at 2am.",
+    leftEffect: { company: 5, relationships: -12, energy: -8, integrity: -5 },
+    rightEffect: { company: -5, relationships: 3, energy: 5, integrity: 5 },
+    category: "strategy",
+    leftForeshadow: "You blocked your calendar. Priya asked why.",
+  },
+  {
+    left: "Bet on marketing",
+    right: "Bet on engineering",
+    context: "You have $1.2M left. A marketing agency showed you case studies — 10x pipeline in 60 days. But your lead engineer is burning out and begging for a hire. You can't afford both.",
+    leftEffect: { company: 8, relationships: -8, energy: -5, integrity: -5 },
+    rightEffect: { company: -8, relationships: 3, energy: 5, integrity: 3 },
+    category: "strategy",
+  },
+  {
+    left: "Take the money",
+    right: "Stay independent",
+    context: "An investor offers $5M at a $30M valuation. You think you're worth $50M. But you have 8 months of runway, and the market is getting colder. The term sheet expires Friday.",
+    leftEffect: { company: 10, relationships: -10, energy: -5, integrity: -8 },
+    rightEffect: { company: -5, relationships: 3, energy: 3, integrity: 8 },
+    category: "strategy",
+    rightForeshadow: "The bank balance doesn't lie. The clock is louder now.",
+  },
+  {
+    left: "Accept the offer",
+    right: "Walk away",
+    context: "An acquisition offer is on the table: $45M. Clean exit. Everyone gets paid. But you ran the numbers — in 12 months you could be worth $80M. Your team hasn't slept a full night in six weeks.",
+    leftEffect: { company: -3, relationships: 5, energy: 8, integrity: -5 },
+    rightEffect: { company: 5, relationships: -12, energy: -12, integrity: -3 },
+    category: "strategy",
+  },
 
   // --- LIFE ---
-  { left: "GO HOME", right: "STAY LATE", context: "The demo is broken. Your biggest client needs it tomorrow morning. Your partner made dinner.", leftEffect: { company: -15, relationships: 10, energy: 8, integrity: 3 }, rightEffect: { company: 10, relationships: -15, energy: -15, integrity: -3 }, category: "life" },
-  { left: "SLOW DOWN", right: "PUSH HARDER", context: "Three people pulled all-nighters this week. You're about to close the biggest deal of the year.", leftEffect: { company: -12, relationships: 5, energy: 10, integrity: 3 }, rightEffect: { company: 10, relationships: -12, energy: -18, integrity: -5 }, category: "life", rightForeshadow: "Elena's light was still on when you left. It's been on every night this week." },
-  { left: "REST", right: "ONE MORE WEEK", context: "You haven't slept more than 5 hours in two weeks. The product launch is in 7 days.", leftEffect: { company: -12, relationships: 3, energy: 15, integrity: 3 }, rightEffect: { company: 8, relationships: -8, energy: -18, integrity: -3 }, category: "life" },
-  { left: "ATTEND", right: "CANCEL", context: "Your friend's wedding is this Saturday. Your Series B term sheet expires Monday.", leftEffect: { company: -15, relationships: 12, energy: 5, integrity: 5 }, rightEffect: { company: 10, relationships: -18, energy: -8, integrity: -8 }, category: "life" },
+  {
+    left: "Go home",
+    right: "Fix the demo",
+    context: "The demo is broken and your biggest client needs it by 9am. Your partner texted 'dinner's ready' forty minutes ago. You haven't responded. The office is empty except for you.",
+    leftEffect: { company: -15, relationships: 10, energy: 8, integrity: 3 },
+    rightEffect: { company: 10, relationships: -15, energy: -15, integrity: -3 },
+    category: "life",
+    rightForeshadow: "By the time you got home, the food was in the fridge. The lights were off.",
+  },
+  {
+    left: "Tell them to go home",
+    right: "One more push",
+    context: "Three people slept in the office this week. Elena's eyes are red. Marcus is on his fourth coffee and it's only Tuesday. But you're about to close the biggest deal of the year.",
+    leftEffect: { company: -12, relationships: 5, energy: 10, integrity: 3 },
+    rightEffect: { company: 10, relationships: -12, energy: -18, integrity: -5 },
+    category: "life",
+    rightForeshadow: "Elena's light was still on when you left. It's been on every night this week.",
+  },
+  {
+    left: "Take a week off",
+    right: "Push through",
+    context: "You forgot your sister's birthday. You can't remember the last meal you didn't eat at your desk. The launch is in 7 days. Your hands are shaking when you type.",
+    leftEffect: { company: -12, relationships: 3, energy: 15, integrity: 3 },
+    rightEffect: { company: 8, relationships: -8, energy: -18, integrity: -3 },
+    category: "life",
+  },
+  {
+    left: "Go to the wedding",
+    right: "Work the weekend",
+    context: "Your college roommate's wedding is Saturday. You RSVP'd six months ago. Your Series B term sheet expires Monday. David wants 'one more conversation' before he signs.",
+    leftEffect: { company: -15, relationships: 12, energy: 5, integrity: 5 },
+    rightEffect: { company: 10, relationships: -18, energy: -8, integrity: -8 },
+    category: "life",
+  },
 
   // --- CONSEQUENCE TENSIONS ---
   // These only appear if you made a specific choice earlier. The game remembers.
 
-  // You let your first engineer go → now face the fallout
-  { left: "PROMOTE HER", right: "HIRE OUTSIDE", context: "Marcus is gone. The team is shaken. Someone needs to step up — but your best candidate has only been here three months.", leftEffect: { company: -5, relationships: 8, energy: 3, integrity: 5 }, rightEffect: { company: 5, relationships: -12, energy: -5, integrity: -3 }, category: "people", requires: { choice: "LET THEM GO" } },
+  {
+    left: "Promote from within",
+    right: "Hire a replacement",
+    context: "It's been two weeks since Marcus left. The team is quieter now. Someone needs to lead engineering, but your best candidate has only been here three months. The wrong choice splits the team again.",
+    leftEffect: { company: -5, relationships: 8, energy: 3, integrity: 5 },
+    rightEffect: { company: 5, relationships: -12, energy: -5, integrity: -3 },
+    category: "people",
+    requires: { choice: "Let him go" },
+  },
 
-  // You fired your friend → the aftermath
-  { left: "REACH OUT", right: "MOVE ON", context: "Your friend hasn't responded to your texts in three weeks. Mutual friends are asking what happened.", leftEffect: { company: -3, relationships: 8, energy: -5, integrity: 5 }, rightEffect: { company: 3, relationships: -5, energy: 3, integrity: -8 }, category: "people", requires: { choice: "CEO FIRST" } },
+  {
+    left: "Text them",
+    right: "Let it fade",
+    context: "Your friend hasn't responded to your texts in three weeks. You saw on Instagram that they went to a concert with people from the office. Mutual friends keep asking what happened.",
+    leftEffect: { company: -3, relationships: 8, energy: -5, integrity: 5 },
+    rightEffect: { company: 3, relationships: -5, energy: 3, integrity: -8 },
+    category: "people",
+    requires: { choice: "Do what a CEO would do" },
+  },
 
-  // You lied to your investor → it's catching up
-  { left: "COME CLEAN", right: "DOUBLE DOWN", context: "David's analyst pulled the real numbers. He hasn't called yet. But he will.", leftEffect: { company: -15, relationships: 5, energy: -5, integrity: 12 }, rightEffect: { company: 5, relationships: -15, energy: -10, integrity: -18 }, category: "values", requires: { choice: "BUY TIME" } },
+  {
+    left: "Tell David everything",
+    right: "Dig deeper",
+    context: "David's analyst pulled the real numbers. They don't match what you told him. He hasn't called yet — but his assistant blocked an hour on your calendar for Thursday. No agenda.",
+    leftEffect: { company: -15, relationships: 5, energy: -5, integrity: 12 },
+    rightEffect: { company: 5, relationships: -15, energy: -10, integrity: -18 },
+    category: "values",
+    requires: { choice: "Buy yourself a quarter" },
+  },
 
-  // You shipped with the bug → it blew up
-  { left: "RECALL IT", right: "PATCH QUIETLY", context: "The bug you shipped caused a data loss for 200 users. Tech blogs are asking questions.", leftEffect: { company: -18, relationships: 3, energy: -5, integrity: 10 }, rightEffect: { company: -5, relationships: -8, energy: -3, integrity: -15 }, category: "product", requires: { choice: "SHIP IT" } },
+  {
+    left: "Issue a recall",
+    right: "Patch it overnight",
+    context: "The bug you shipped caused data loss for 200 users. A tech blogger has screenshots. Your inbox has three emails with subject lines that start with 'Regarding the incident—'",
+    leftEffect: { company: -18, relationships: 3, energy: -5, integrity: 10 },
+    rightEffect: { company: -5, relationships: -8, energy: -3, integrity: -15 },
+    category: "product",
+    requires: { choice: "Ship it now" },
+  },
 
-  // You stayed lean → the constraint is real now
-  { left: "BOOTSTRAP IT", right: "CAVE IN", context: "You turned down the money. Now payroll is in 6 weeks and your pipeline is dry.", leftEffect: { company: -8, relationships: 5, energy: -10, integrity: 8 }, rightEffect: { company: 10, relationships: -8, energy: -5, integrity: -10 }, category: "strategy", requires: { choice: "STAY LEAN" } },
+  {
+    left: "Bootstrap through it",
+    right: "Call the investor back",
+    context: "You turned down the money. Three months later, payroll is in 6 weeks and your pipeline is bone dry. The investor you rejected left a voicemail yesterday. 'No hard feelings. Let's talk.'",
+    leftEffect: { company: -8, relationships: 5, energy: -10, integrity: 8 },
+    rightEffect: { company: 10, relationships: -8, energy: -5, integrity: -10 },
+    category: "strategy",
+    requires: { choice: "Stay independent" },
+  },
 
-  // You pushed harder → someone broke
-  { left: "COVER FOR THEM", right: "REPLACE THEM", context: "Elena stopped showing up. Three days now. Her team says she was crying in the parking lot.", leftEffect: { company: -10, relationships: 8, energy: -5, integrity: 5 }, rightEffect: { company: 5, relationships: -15, energy: -3, integrity: -8 }, category: "life", requires: { choice: "PUSH HARDER" } },
+  {
+    left: "Cover for her",
+    right: "Find a replacement",
+    context: "Elena stopped showing up. Three days now. Her team lead says she was crying in the parking lot last Friday. Her Slack status says 'away.' She was the best engineer you had.",
+    leftEffect: { company: -10, relationships: 8, energy: -5, integrity: 5 },
+    rightEffect: { company: 5, relationships: -15, energy: -3, integrity: -8 },
+    category: "life",
+    requires: { choice: "One more push" },
+  },
 
-  // You took the acquisition meeting → the team found out
-  { left: "DENY IT", right: "OWN IT", context: "Someone leaked that you took the meeting. Priya is at your door. 'Were you going to tell us?'", leftEffect: { company: 3, relationships: -12, energy: -3, integrity: -15 }, rightEffect: { company: -5, relationships: 5, energy: -5, integrity: 8 }, category: "values", requires: { choice: "TAKE THE MEETING" } },
+  {
+    left: "Deny the meeting happened",
+    right: "Tell them the truth",
+    context: "Someone leaked that you met with Google. Priya is standing in your doorway. Her arms are crossed. 'Were you going to tell us, or were we going to find out from Twitter?'",
+    leftEffect: { company: 3, relationships: -12, energy: -3, integrity: -15 },
+    rightEffect: { company: -5, relationships: 5, energy: -5, integrity: 8 },
+    category: "values",
+    requires: { choice: "Take the meeting" },
+  },
 
-  // You buried the data breach → someone found it
-  { left: "RESIGN", right: "FIGHT IT", context: "A security researcher found the breach you buried. They're giving you 48 hours before they go public.", leftEffect: { company: -20, relationships: 5, energy: 5, integrity: 15 }, rightEffect: { company: -5, relationships: -10, energy: -15, integrity: -10 }, category: "values", requires: { choice: "BURY IT" } },
+  {
+    left: "Resign before it breaks",
+    right: "Fight it",
+    context: "A security researcher found the breach you buried. They emailed you directly: '48 hours before I publish.' Your lawyer says you have options. Your stomach says you don't.",
+    leftEffect: { company: -20, relationships: 5, energy: 5, integrity: 15 },
+    rightEffect: { company: -5, relationships: -10, energy: -15, integrity: -10 },
+    category: "values",
+    requires: { choice: "Fix it quietly" },
+  },
 ];
 
 export const FONTS = {

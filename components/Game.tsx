@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { FONTS } from '@/lib/game/constants';
 import { GameDimensions, Ending, Decision, IndexedTension } from '@/lib/game/types';
 import { getSceneForState, getBreathingMoment, getTension, checkEnding, checkSurpriseEvent, checkMilestone, getTensionStakes, type SurpriseEvent, type Milestone, type TensionStakes } from '@/lib/game/engine';
@@ -22,9 +22,9 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     // Start slightly underwater. Day one of a startup is already hard.
     // Opening choice flavors the run — it shouldn't cripple any dimension.
     const base = { company: 50, relationships: 55, energy: 65, integrity: 70 };
-    if (firstChoice === "TRUST HIM") {
+    if (firstChoice === "Trust Marcus") {
       base.company -= 5; base.relationships += 5; base.integrity += 3;
-    } else if (firstChoice === "TRUST YOURSELF") {
+    } else if (firstChoice === "Trust yourself") {
       base.company += 5; base.relationships -= 8; base.energy -= 3;
     }
     return base;
@@ -96,6 +96,18 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   }, []);
 
   const sceneKey = getSceneForState(dims, week);
+
+  // Live mood — the room breathes with the state of the company
+  const liveMood = useMemo(() => ({
+    energy: dims.energy,
+    tension: Math.max(
+      100 - Math.min(dims.company, dims.relationships, dims.energy, dims.integrity),
+      cash < 500 ? 70 : 0,
+      stakes === 'critical' ? 80 : stakes === 'high' ? 60 : 30,
+    ),
+    relationships: dims.relationships,
+    integrity: dims.integrity,
+  }), [dims, cash, stakes]);
 
   const isDesperate = dims.company < 35 || dims.energy < 30 || dims.relationships < 30 || cash < 400;
 
@@ -387,7 +399,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   };
 
   return (
-    <SceneBackground sceneKey={sceneKey}>
+    <SceneBackground sceneKey={sceneKey} mood={liveMood}>
       <div style={{
         maxWidth: 520, margin: "0 auto",
         padding: "max(24px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px))",
