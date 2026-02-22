@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { FONTS, COLORS } from '@/lib/game/constants';
 import { Ending, GameDimensions, Decision } from '@/lib/game/types';
-import { getValuation } from '@/lib/game/engine';
-import { getPlayerRank } from '@/lib/game/stats';
+import { getValuation, detectArchetype } from '@/lib/game/engine';
+import { getRank, savePlayRecord } from '@/lib/game/stats';
 import { generateEndgameNarrative } from '@/lib/ai/narrative';
 import { SceneBackground } from './SceneBackground';
 import { CEOCard } from './CEOCard';
@@ -24,7 +24,21 @@ export function Endgame({ ending, arr, dims, decisions, weekLog, pivotalMoments,
   const [headline, setHeadline] = useState<string | null>(null);
   const [mirror, setMirror] = useState<string | null>(null);
   const valuation = getValuation(ending, arr);
-  const rank = getPlayerRank();
+  const { rank, total } = getRank(valuation);
+  const archetype = detectArchetype(dims, decisions, weekLog.length);
+
+  // Save play record to localStorage on mount
+  useEffect(() => {
+    savePlayRecord({
+      ending: ending.type,
+      endingLabel: ending.label,
+      weeks: weekLog.length,
+      valuation,
+      archetype,
+      date: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     generateEndgameNarrative(ending, companyName, decisions, dims).then(result => {
@@ -66,9 +80,11 @@ export function Endgame({ ending, arr, dims, decisions, weekLog, pivotalMoments,
           valuation={valuation}
           weekLog={weekLog}
           rank={rank}
+          totalRuns={total}
           headline={headline}
           mirror={mirror || "You played the only way you knew how."}
           dims={dims}
+          archetype={archetype}
           onPlayAgain={onPlayAgain}
         />
 

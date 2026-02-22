@@ -2,7 +2,7 @@
 
 import { FONTS, COLORS, dimColor, weekDotColor } from '@/lib/game/constants';
 import { Ending, GameDimensions } from '@/lib/game/types';
-import { getTotalPlayerCount } from '@/lib/game/stats';
+import { getPlayCount, getBestValuation } from '@/lib/game/stats';
 import { ShareImage } from './ShareImage';
 
 interface CEOCardProps {
@@ -11,9 +11,11 @@ interface CEOCardProps {
   valuation: number;
   weekLog: string[];
   rank: number;
+  totalRuns: number;
   headline: string;
   mirror: string;
   dims: GameDimensions;
+  archetype: string;
   onPlayAgain: () => void;
 }
 
@@ -42,8 +44,9 @@ function viralSummary(weekCount: number, dims: GameDimensions, ending: Ending): 
   return `${weekCount} weeks. Chose ${chose} over ${lost}.`;
 }
 
-export function CEOCard({ ending, companyName, valuation, weekLog, rank, headline, mirror, dims, onPlayAgain }: CEOCardProps) {
-  const totalPlayers = getTotalPlayerCount();
+export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRuns, headline, mirror, dims, archetype, onPlayAgain }: CEOCardProps) {
+  const playCount = getPlayCount();
+  const bestVal = getBestValuation();
   const summary = viralSummary(weekLog.length, dims, ending);
 
   const dimEntries = [
@@ -119,8 +122,24 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, headlin
           <div style={{
             height: 1,
             background: "rgba(255,255,255,0.06)",
-            marginBottom: 36,
+            marginBottom: 12,
           }} />
+
+          {/* Archetype — the identity label */}
+          <div style={{
+            textAlign: "center" as const,
+            marginBottom: 24,
+          }}>
+            <div style={{
+              fontSize: 10,
+              color: COLORS.muted,
+              fontFamily: FONTS.mono,
+              letterSpacing: "2.5px",
+              textTransform: "uppercase" as const,
+            }}>
+              {archetype}
+            </div>
+          </div>
 
           {/* Center */}
           <div style={{ textAlign: "center" as const, marginBottom: 36 }}>
@@ -264,7 +283,9 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, headlin
               color: "rgba(255,255,255,0.2)",
               fontFamily: FONTS.mono,
             }}>
-              #{rank} of {totalPlayers}
+              {playCount <= 1
+                ? "First run"
+                : `Run #${totalRuns} — Best: $${bestVal}M`}
             </div>
             <div style={{
               fontSize: 10,
@@ -303,8 +324,7 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, headlin
           weekLog={weekLog}
           dims={dims}
           headline={headline}
-          rank={rank}
-          totalPlayers={totalPlayers}
+          archetype={archetype}
         />
 
         <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>

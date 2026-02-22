@@ -82,7 +82,9 @@ export function Onboarding({ onStart }: OnboardingProps) {
             letterSpacing: "0.3px",
             textShadow: "0 1px 8px rgba(0,0,0,0.5)",
           }}>
-            Monday morning. First day. The office smells like fresh paint and coffee.
+            {stats.isReturning
+              ? "You know this feeling. The laptop. The choices. The weight."
+              : "Monday morning. First day. The office smells like fresh paint and coffee."}
           </div>
         </div>
 
@@ -124,20 +126,43 @@ export function Onboarding({ onStart }: OnboardingProps) {
           <div style={{
             display: "flex", gap: 16, flexWrap: "wrap",
           }}>
-            {[
-              { n: stats.totalPlayers, label: "CEOs played" },
-              { n: stats.avgWeeks, label: "avg lasted" },
-              { n: stats.ipoRate, label: "made it to IPO" },
-            ].map((s, i) => (
-              <div key={i}>
-                <span style={{
-                  fontFamily: FONTS.mono, fontSize: 14, fontWeight: 700, color: "#fff",
-                }}>{s.n}</span>
-                <span style={{
-                  fontSize: 11, color: "rgba(255,255,255,0.35)", marginLeft: 5,
-                }}>{s.label}</span>
-              </div>
-            ))}
+            {stats.isReturning ? (
+              <>
+                {[
+                  { n: stats.totalPlayers, label: "" },
+                  { n: stats.avgWeeks, label: "" },
+                  { n: `$${stats.bestValuation}M`, label: "best" },
+                ].map((s, i) => (
+                  <div key={i}>
+                    <span style={{
+                      fontFamily: FONTS.mono, fontSize: 14, fontWeight: 700, color: "#fff",
+                    }}>{s.n}</span>
+                    {s.label && (
+                      <span style={{
+                        fontSize: 11, color: "rgba(255,255,255,0.35)", marginLeft: 5,
+                      }}>{s.label}</span>
+                    )}
+                  </div>
+                ))}
+              </>
+            ) : (
+              <>
+                {[
+                  { n: stats.totalPlayers, label: "CEOs played" },
+                  { n: stats.avgWeeks, label: "avg lasted" },
+                  { n: stats.ipoRate, label: "made it to IPO" },
+                ].map((s, i) => (
+                  <div key={i}>
+                    <span style={{
+                      fontFamily: FONTS.mono, fontSize: 14, fontWeight: 700, color: "#fff",
+                    }}>{s.n}</span>
+                    <span style={{
+                      fontSize: 11, color: "rgba(255,255,255,0.35)", marginLeft: 5,
+                    }}>{s.label}</span>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
 
@@ -160,7 +185,7 @@ export function Onboarding({ onStart }: OnboardingProps) {
               color: "rgba(255,255,255,0.40)",
               letterSpacing: "1px",
             }}>
-              TAP ANYWHERE TO BEGIN
+              {stats.isReturning ? "TAP ANYWHERE TO TRY AGAIN" : "TAP ANYWHERE TO BEGIN"}
             </span>
           </div>
           <div style={{

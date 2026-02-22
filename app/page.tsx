@@ -82,13 +82,7 @@ export default function Page() {
       opacity: fading ? 0 : 1,
       transition: `opacity ${TEMPO.fadeOut}ms ease`,
     }}>
-      {activeScreen === 'onboarding' && (
-        <ScreenTransition screenKey="onboarding">
-          <Onboarding onStart={() => transitionTo(() => setScreen('cinema'))} />
-        </ScreenTransition>
-      )}
-
-      {activeScreen === 'cinema' && (
+      {(activeScreen === 'onboarding' || activeScreen === 'cinema') && (
         <ScreenTransition screenKey="cinema">
           <CinematicOpening onComplete={(name, choice) => {
             transitionTo(() => {

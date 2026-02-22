@@ -1,5 +1,116 @@
-import { GameDimensions, Ending, IndexedTension } from './types';
+import { GameDimensions, Ending, IndexedTension, Decision } from './types';
 import { TENSIONS, BREATHING_MOMENTS } from './constants';
+
+// --- ARCHETYPE DETECTION ---
+// Your pattern of choices reveals who you are as a leader.
+
+export type Archetype =
+  | 'The Visionary'    // high company, low relationships
+  | 'The Shepherd'     // high relationships, high integrity
+  | 'The Survivor'     // low everything but lasted 40+ weeks
+  | 'The Purist'       // high integrity, low company
+  | 'The Operator'     // balanced dims, high ARR
+  | 'The Burnout'      // high company, zero energy
+  | 'The Maverick';    // wild swings, many extreme choices
+
+export function detectArchetype(dims: GameDimensions, decisions: Decision[], weeks: number): Archetype {
+  const { company, relationships, energy, integrity } = dims;
+  const avg = (company + relationships + energy + integrity) / 4;
+  const spread = Math.max(company, relationships, energy, integrity) - Math.min(company, relationships, energy, integrity);
+
+  // Score each archetype
+  const scores: Record<Archetype, number> = {
+    'The Visionary': 0,
+    'The Shepherd': 0,
+    'The Survivor': 0,
+    'The Purist': 0,
+    'The Operator': 0,
+    'The Burnout': 0,
+    'The Maverick': 0,
+  };
+
+  // The Visionary: high company, sacrificed relationships
+  if (company > 55) scores['The Visionary'] += 3;
+  if (company > 70) scores['The Visionary'] += 3;
+  if (relationships < 40) scores['The Visionary'] += 2;
+  if (company - relationships > 25) scores['The Visionary'] += 3;
+
+  // The Shepherd: prioritized people + integrity
+  if (relationships > 55) scores['The Shepherd'] += 3;
+  if (integrity > 55) scores['The Shepherd'] += 3;
+  if (relationships > 65 && integrity > 50) scores['The Shepherd'] += 3;
+  if (company < 40 && relationships > 50) scores['The Shepherd'] += 2;
+
+  // The Survivor: lasted long despite mediocre stats
+  if (weeks >= 40 && avg < 50) scores['The Survivor'] += 6;
+  if (weeks >= 30 && avg < 45) scores['The Survivor'] += 4;
+  if (weeks >= 20 && Math.min(company, relationships, energy, integrity) > 15) scores['The Survivor'] += 2;
+
+  // The Purist: high integrity, wouldn't compromise
+  if (integrity > 60) scores['The Purist'] += 3;
+  if (integrity > 75) scores['The Purist'] += 3;
+  if (integrity - company > 20) scores['The Purist'] += 3;
+  if (company < 35 && integrity > 55) scores['The Purist'] += 2;
+
+  // The Operator: balanced, high performance
+  if (spread < 20 && avg > 50) scores['The Operator'] += 5;
+  if (spread < 15) scores['The Operator'] += 3;
+  if (avg > 55 && spread < 25) scores['The Operator'] += 3;
+
+  // The Burnout: drove company forward at personal cost
+  if (company > 50 && energy < 25) scores['The Burnout'] += 5;
+  if (company > 40 && energy < 35) scores['The Burnout'] += 3;
+  if (energy < 20) scores['The Burnout'] += 2;
+
+  // The Maverick: wild decision swings — measure from decision history
+  if (decisions.length >= 5) {
+    let swings = 0;
+    for (let i = 1; i < decisions.length; i++) {
+      const prev = decisions[i - 1].dims;
+      const curr = decisions[i].dims;
+      const delta = Math.abs(curr.company - prev.company) + Math.abs(curr.relationships - prev.relationships) +
+                    Math.abs(curr.energy - prev.energy) + Math.abs(curr.integrity - prev.integrity);
+      if (delta > 30) swings++;
+    }
+    if (swings > decisions.length * 0.4) scores['The Maverick'] += 5;
+    if (swings > decisions.length * 0.3) scores['The Maverick'] += 3;
+    if (spread > 35) scores['The Maverick'] += 2;
+  }
+
+  // Return highest scoring archetype
+  let best: Archetype = 'The Operator';
+  let bestScore = 0;
+  for (const [archetype, score] of Object.entries(scores)) {
+    if (score > bestScore) {
+      bestScore = score;
+      best = archetype as Archetype;
+    }
+  }
+  return best;
+}
+
+// Archetype-based tension bias — nudge tension selection toward the player's weakness
+export function getArchetypeBias(archetype: Archetype): Record<string, number> {
+  // Returns category score bonuses for tension selection
+  switch (archetype) {
+    case 'The Visionary':
+      return { people: 3, life: 2 };         // force them to face what they ignore
+    case 'The Shepherd':
+      return { product: 3, strategy: 2 };     // push growth dilemmas
+    case 'The Survivor':
+      return { values: 2, strategy: 2 };      // test if survival has a cost
+    case 'The Purist':
+      return { product: 3, strategy: 3 };     // force practical trade-offs
+    case 'The Operator':
+      return { values: 3, intimate: 2 };      // challenge the balanced player emotionally
+    case 'The Burnout':
+      return { life: 3, people: 2 };          // force them to confront the cost
+    case 'The Maverick':
+      return { values: 3, people: 2 };        // test consistency
+    default:
+      return {};
+  }
+}
 
 // --- SURPRISE EVENTS ---
 // These happen TO the player. No choice. The world moved without you.
@@ -221,7 +332,7 @@ export function getBreathingMoment(dims: GameDimensions): string {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-export function getTension(week: number, usedIndices: Set<number>, dims?: GameDimensions, cash?: number, pastChoices?: string[]): IndexedTension {
+export function getTension(week: number, usedIndices: Set<number>, dims?: GameDimensions, cash?: number, pastChoices?: string[], archetypeBias?: Record<string, number>): IndexedTension {
   const choiceSet = new Set(pastChoices || []);
 
   // Filter: remove tensions whose `requires` hasn't been met, and keep ones that have
@@ -270,6 +381,11 @@ export function getTension(week: number, usedIndices: Set<number>, dims?: GameDi
 
     // Cash crisis — prefer strategy tensions
     if (cash !== undefined && cash < 500 && t.category === 'strategy') score += 3;
+
+    // Archetype bias — the game learns your pattern and pushes back
+    if (archetypeBias && archetypeBias[t.category]) {
+      score += archetypeBias[t.category];
+    }
 
     // Variety: slight random factor so it's not 100% deterministic
     score += Math.random() * 2;

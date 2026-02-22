@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { FONTS, COLORS, TEMPO } from '@/lib/game/constants';
 import { GameDimensions, Ending, Decision, IndexedTension, TensionFormat } from '@/lib/game/types';
-import { getSceneForState, getBreathingMoment, getTension, checkEnding, checkSurpriseEvent, checkMilestone, getTensionStakes, type SurpriseEvent, type Milestone, type TensionStakes } from '@/lib/game/engine';
+import { getSceneForState, getBreathingMoment, getTension, checkEnding, checkSurpriseEvent, checkMilestone, getTensionStakes, detectArchetype, getArchetypeBias, type SurpriseEvent, type Milestone, type TensionStakes } from '@/lib/game/engine';
 import { generateNarrative } from '@/lib/ai/narrative';
 import { SceneBackground } from './SceneBackground';
 import { DimBar } from './DimBar';
@@ -50,6 +50,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const [usedEvents, setUsedEvents] = useState<Set<string>>(new Set());
   const [milestone, setMilestone] = useState<Milestone | null>(null);
   const [usedMilestones, setUsedMilestones] = useState<Set<string>>(new Set());
+  const [archetypeBias, setArchetypeBias] = useState<Record<string, number>>({});
   const pendingContinueRef = useRef<(() => void) | null>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const usedTensionsRef = useRef<Set<number>>(new Set());
@@ -71,7 +72,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   // Get initial tension
   useEffect(() => {
     const pastChoices = decisions.map(d => d.choice);
-    const t = getTension(week, usedTensions, dims, cash, pastChoices);
+    const t = getTension(week, usedTensions, dims, cash, pastChoices, archetypeBias);
     setTension(t);
     setIsConsequence(!!t.requires);
     setStakes(getTensionStakes(t, dims));
@@ -169,7 +170,14 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   };
 
   const loadNextTension = (w: number, d: GameDimensions, c: number, decs: Decision[]) => {
-    const t = getTension(w, usedTensionsRef.current, d, c, decs.map(dd => dd.choice));
+    // Every 10 weeks, re-detect archetype and update tension bias
+    if (w % 10 === 0 && w > 0) {
+      const arch = detectArchetype(d, decs, w);
+      const bias = getArchetypeBias(arch);
+      setArchetypeBias(bias);
+    }
+
+    const t = getTension(w, usedTensionsRef.current, d, c, decs.map(dd => dd.choice), archetypeBias);
     setTension(t);
     setIsConsequence(!!t.requires);
     setStakes(getTensionStakes(t, d));

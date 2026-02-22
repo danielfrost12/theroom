@@ -12,8 +12,7 @@ interface ShareImageProps {
   weekLog: string[];
   dims: GameDimensions;
   headline: string;
-  rank: number;
-  totalPlayers: string;
+  archetype: string;
 }
 
 // Web Share API payload type
@@ -33,7 +32,7 @@ const ENDING_ACCENTS: Record<string, { primary: string; glow: string }> = {
 
 
 export function ShareImage({
-  ending, companyName, valuation, weekLog, dims, headline, rank, totalPlayers
+  ending, companyName, valuation, weekLog, dims, headline, archetype
 }: ShareImageProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
@@ -77,7 +76,7 @@ export function ShareImage({
       weekLog: weekLog.join(''),
       dims,
       headline,
-      rank,
+      rank: 0, // legacy field — kept for share URL compatibility
     };
     const shareUrl = buildShareUrl(shareData);
 
@@ -128,7 +127,7 @@ export function ShareImage({
       console.error('Share failed:', err);
       setGenerating(false);
     }
-  }, [companyName, ending, valuation, weekLog, dims, headline, rank]);
+  }, [companyName, ending, valuation, weekLog, dims, headline]);
 
   return (
     <>
@@ -202,8 +201,24 @@ export function ShareImage({
             <div style={{
               height: 1,
               background: "rgba(255,255,255,0.06)",
-              marginBottom: 40,
+              marginBottom: 12,
             }} />
+
+            {/* Archetype */}
+            <div style={{
+              textAlign: "center" as const,
+              marginBottom: 20,
+            }}>
+              <div style={{
+                fontSize: 10,
+                color: "rgba(255,255,255,0.3)",
+                fontFamily: "'JetBrains Mono', monospace",
+                letterSpacing: "2.5px",
+                textTransform: "uppercase" as const,
+              }}>
+                {archetype}
+              </div>
+            </div>
 
             {/* Center: Emoji + Company + Result */}
             <div style={{
@@ -354,7 +369,7 @@ export function ShareImage({
                 color: "rgba(255,255,255,0.15)",
                 fontFamily: "'JetBrains Mono', monospace",
               }}>
-                #{rank} of {totalPlayers}
+                behindtheroom.com
               </div>
             </div>
           </div>
