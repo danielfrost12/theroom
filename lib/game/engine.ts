@@ -1,6 +1,202 @@
 import { GameDimensions, Ending, IndexedTension } from './types';
 import { TENSIONS, BREATHING_MOMENTS } from './constants';
 
+// --- SURPRISE EVENTS ---
+// These happen TO the player. No choice. The world moved without you.
+// Each has a condition, a message, and dim effects.
+export interface SurpriseEvent {
+  message: string;
+  subtext: string;
+  effects: Partial<GameDimensions>;
+  cashEffect?: number;
+  arrEffect?: number;
+  condition: (state: { week: number; dims: GameDimensions; cash: number; arr: number; pastChoices: string[] }) => boolean;
+  once?: string; // unique key — only fires once per game
+}
+
+export const SURPRISE_EVENTS: SurpriseEvent[] = [
+  // Positive surprises — reward for good play
+  {
+    message: "A tweet about your product went viral overnight.",
+    subtext: "1,200 signups before coffee.",
+    effects: { company: 8, energy: 5 },
+    arrEffect: 3,
+    condition: ({ dims, week }) => week >= 6 && dims.company > 55,
+    once: "viral_tweet",
+  },
+  {
+    message: "Elena closed the biggest deal of the quarter.",
+    subtext: "She didn't even tell you. You found out from the CRM.",
+    effects: { company: 5, relationships: 5, energy: 3 },
+    arrEffect: 5,
+    condition: ({ dims, week }) => week >= 10 && dims.relationships > 50 && dims.company > 40,
+    once: "elena_deal",
+  },
+  {
+    message: "Your engineer shipped a feature on a Sunday. Because she wanted to.",
+    subtext: "Morale isn't measured. It's felt.",
+    effects: { company: 6, relationships: 4, energy: 3, integrity: 2 },
+    condition: ({ dims }) => dims.energy > 55 && dims.relationships > 55,
+    once: "sunday_ship",
+  },
+
+  // Negative surprises — the world doesn't wait
+  {
+    message: "Elena resigned.",
+    subtext: "Her email was two sentences. She thanked no one.",
+    effects: { company: -8, relationships: -10, energy: -5 },
+    condition: ({ dims, week }) => week >= 8 && dims.energy < 30 && dims.relationships < 40,
+    once: "elena_quit",
+  },
+  {
+    message: "Your biggest client churned. No warning.",
+    subtext: "They switched to the competitor you ignored.",
+    effects: { company: -10, relationships: -3 },
+    arrEffect: -8,
+    condition: ({ dims, week }) => week >= 12 && dims.company < 35,
+    once: "client_churn",
+  },
+  {
+    message: "David forwarded your last investor update to someone you've never met.",
+    subtext: "His assistant said it was 'routine.'",
+    effects: { relationships: -5, integrity: -3 },
+    condition: ({ dims, week, pastChoices }) => week >= 10 && pastChoices.includes("BUY TIME") && dims.integrity < 45,
+    once: "david_forward",
+  },
+  {
+    message: "A Glassdoor review appeared. One star.",
+    subtext: "\"Leadership is checked out. We're building a ghost ship.\"",
+    effects: { relationships: -8, company: -3, energy: -3 },
+    condition: ({ dims, week }) => week >= 14 && dims.relationships < 30,
+    once: "glassdoor",
+  },
+  {
+    message: "Marcus submitted a two-week notice.",
+    subtext: "He's going to the competitor.",
+    effects: { company: -12, relationships: -8, energy: -5 },
+    condition: ({ dims, week, pastChoices }) => week >= 10 && pastChoices.includes("LET THEM GO") && dims.relationships < 35,
+    once: "marcus_leaves",
+  },
+
+  // Neutral/dramatic — inflection points
+  {
+    message: "TechCrunch mentioned you in a roundup.",
+    subtext: "Paragraph three. Your name was spelled wrong.",
+    effects: { company: 3 },
+    condition: ({ week, dims }) => week >= 8 && dims.company > 45,
+    once: "techcrunch",
+  },
+  {
+    message: "A co-founder you admire DM'd you on Twitter.",
+    subtext: "\"Saw your product. Impressive. Let's talk.\"",
+    effects: { energy: 8, company: 3, relationships: 3 },
+    condition: ({ week, dims }) => week >= 15 && dims.company > 50 && dims.integrity > 50,
+    once: "founder_dm",
+  },
+];
+
+// Check if a surprise event should fire this week
+export function checkSurpriseEvent(
+  state: { week: number; dims: GameDimensions; cash: number; arr: number; pastChoices: string[] },
+  usedEvents: Set<string>
+): SurpriseEvent | null {
+  // Only ~25% chance each eligible week — surprise events should be rare
+  if (Math.random() > 0.25) return null;
+
+  const eligible = SURPRISE_EVENTS.filter(e => {
+    if (e.once && usedEvents.has(e.once)) return false;
+    return e.condition(state);
+  });
+
+  if (eligible.length === 0) return null;
+  return eligible[Math.floor(Math.random() * eligible.length)];
+}
+
+// --- MILESTONES ---
+// Positive feedback moments — the game acknowledges your survival/success
+export interface Milestone {
+  message: string;
+  subtext: string;
+  condition: (state: { week: number; dims: GameDimensions; arr: number; cash: number }) => boolean;
+  once: string;
+}
+
+export const MILESTONES: Milestone[] = [
+  {
+    message: "Your first $10M ARR.",
+    subtext: "The team celebrated with cheap champagne. Someone cried.",
+    condition: ({ arr }) => arr >= 10,
+    once: "arr_10",
+  },
+  {
+    message: "Your first $25M ARR.",
+    subtext: "David called to congratulate you. First time he's called just to say 'well done.'",
+    condition: ({ arr }) => arr >= 25,
+    once: "arr_25",
+  },
+  {
+    message: "$50M ARR.",
+    subtext: "The office is different now. Bigger. Quieter. More strangers.",
+    condition: ({ arr }) => arr >= 50,
+    once: "arr_50",
+  },
+  {
+    message: "You survived a quarter.",
+    subtext: "13 weeks. 13 decisions. You're still here.",
+    condition: ({ week }) => week >= 13,
+    once: "quarter",
+  },
+  {
+    message: "Half a year.",
+    subtext: "26 weeks in. Most founders don't make it this far.",
+    condition: ({ week }) => week >= 26,
+    once: "half_year",
+  },
+  {
+    message: "Everyone's still here.",
+    subtext: "No one quit this month. That's rarer than you think.",
+    condition: ({ dims, week }) => week >= 16 && dims.relationships > 60 && dims.energy > 50,
+    once: "no_quit",
+  },
+  {
+    message: "You're profitable.",
+    subtext: "Revenue exceeds burn. For the first time, the clock stopped ticking.",
+    condition: ({ arr }) => arr >= 20,
+    once: "profitable",
+  },
+];
+
+export function checkMilestone(
+  state: { week: number; dims: GameDimensions; arr: number; cash: number },
+  usedMilestones: Set<string>
+): Milestone | null {
+  for (const m of MILESTONES) {
+    if (usedMilestones.has(m.once)) continue;
+    if (m.condition(state)) return m;
+  }
+  return null;
+}
+
+// --- TENSION STAKES ---
+// Classify how high-stakes a tension is — affects visual presentation
+export type TensionStakes = 'low' | 'medium' | 'high' | 'critical';
+
+export function getTensionStakes(t: IndexedTension, dims: GameDimensions): TensionStakes {
+  // Consequence tensions are always high
+  if (t.requires) return 'critical';
+
+  // Check if any effect could push a weak dimension to danger
+  const weakest = Math.min(dims.company, dims.relationships, dims.energy, dims.integrity);
+  const maxNegLeft = Math.min(t.leftEffect.company, t.leftEffect.relationships, t.leftEffect.energy, t.leftEffect.integrity);
+  const maxNegRight = Math.min(t.rightEffect.company, t.rightEffect.relationships, t.rightEffect.energy, t.rightEffect.integrity);
+  const worstHit = Math.min(maxNegLeft, maxNegRight);
+
+  if (weakest < 25 && worstHit < -10) return 'critical';
+  if (weakest < 35 || worstHit < -15) return 'high';
+  if (worstHit < -10) return 'medium';
+  return 'low';
+}
+
 export function getSceneForState(dims: GameDimensions, week: number): string {
   if (dims.energy < 25) return "apartment_night";
   if (dims.integrity < 25) return "bar";
@@ -25,26 +221,88 @@ export function getBreathingMoment(dims: GameDimensions): string {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-export function getTension(week: number, usedIndices: Set<number>): IndexedTension {
-  const available = TENSIONS.map((t, i) => ({ ...t, idx: i })).filter(t => !usedIndices.has(t.idx));
+export function getTension(week: number, usedIndices: Set<number>, dims?: GameDimensions, cash?: number, pastChoices?: string[]): IndexedTension {
+  const choiceSet = new Set(pastChoices || []);
+
+  // Filter: remove tensions whose `requires` hasn't been met, and keep ones that have
+  const available = TENSIONS.map((t, i) => ({ ...t, idx: i })).filter(t => {
+    if (usedIndices.has(t.idx)) return false;
+    // If tension requires a past choice, only include if that choice was made
+    if (t.requires && !choiceSet.has(t.requires.choice)) return false;
+    return true;
+  });
+
   if (available.length === 0) return { ...TENSIONS[Math.floor(Math.random() * TENSIONS.length)], idx: -1 };
-  return available[Math.floor(Math.random() * available.length)];
+
+  // If no dims provided, fall back to random (first tension)
+  if (!dims) return available[Math.floor(Math.random() * available.length)];
+
+  // The game knows who you've been. It attacks your weakest point.
+  // Consequence tensions (requires) get priority — the game remembers your choices.
+  const scored = available.map(t => {
+    // Consequence tensions get a massive bonus — they should appear soon after the triggering choice
+    let score = t.requires ? 15 : 0;
+
+    // Find the player's weakest dimension
+    const dimEntries: [string, number][] = [
+      ['company', dims.company], ['relationships', dims.relationships],
+      ['energy', dims.energy], ['integrity', dims.integrity],
+    ];
+    dimEntries.sort((a, b) => a[1] - b[1]);
+    const weakest = dimEntries[0][0] as keyof GameDimensions;
+    const secondWeakest = dimEntries[1][0] as keyof GameDimensions;
+
+    // Prefer tensions where BOTH choices hurt the weakest dimension
+    // (no safe path — you have to sacrifice what you can't afford)
+    if (t.leftEffect[weakest] < -5 || t.rightEffect[weakest] < -5) score += 3;
+    if (t.leftEffect[weakest] < -5 && t.rightEffect[weakest] < -5) score += 5;
+
+    // Prefer tensions that force tradeoffs between the two weakest dims
+    if ((t.leftEffect[weakest] < 0 && t.leftEffect[secondWeakest] > 0) ||
+        (t.rightEffect[weakest] < 0 && t.rightEffect[secondWeakest] > 0)) score += 2;
+
+    // Category targeting: match tension category to the crisis
+    if (dims.company < 35 && t.category === 'product') score += 3;
+    if (dims.company < 35 && t.category === 'strategy') score += 2;
+    if (dims.relationships < 35 && t.category === 'people') score += 3;
+    if (dims.energy < 40 && t.category === 'life') score += 3;
+    if (dims.integrity < 35 && t.category === 'values') score += 3;
+
+    // Cash crisis — prefer strategy tensions
+    if (cash !== undefined && cash < 500 && t.category === 'strategy') score += 3;
+
+    // Variety: slight random factor so it's not 100% deterministic
+    score += Math.random() * 2;
+
+    return { tension: t, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+
+  // Pick from top 3 to maintain some unpredictability
+  const topN = scored.slice(0, Math.min(3, scored.length));
+  return topN[Math.floor(Math.random() * topN.length)].tension;
 }
 
 export function checkEnding(state: { week: number; cash: number; arr: number; dims: GameDimensions }): Ending | null {
   const { week, cash, arr, dims } = state;
-  if (cash <= 0) return { type: "bankrupt", label: "BANKRUPT", emoji: "\u{1F480}", line: `Bankrupt in week ${week}.` };
-  if (dims.energy <= 0) return { type: "burnout", label: "BURNED OUT", emoji: "\u{1F525}", line: `Burned out in week ${week}. Company was worth $${Math.round(arr / 10)}M without you.` };
-  if (dims.integrity <= 0) return { type: "disgraced", label: "DISGRACED", emoji: "\u{1FAA6}", line: `Disgraced in week ${week}. The Glassdoor reviews wrote themselves.` };
-  if (dims.relationships <= 10 && dims.company > 50) return { type: "board_removed", label: "BOARD REMOVED", emoji: "\u{1F6AA}", line: `Board removed you in week ${week}. Company was worth $${Math.round(arr / 8)}M.` };
-  if (arr >= 100 && dims.integrity > 60 && dims.relationships > 50 && dims.energy > 40) return { type: "ipo", label: "IPO", emoji: "\u{1F514}", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${week} weeks.${dims.relationships > 75 ? " The whole team was still there." : ""}` };
-  if (arr >= 60 && week >= 20) {
-    if (Math.random() < 0.15) return { type: "acquired", label: "ACQUIRED", emoji: "\u{1F91D}", line: `Acquired for $${Math.round(arr * 2.2)}M in ${week} weeks.` };
+
+  // Grace period: no catastrophic endings before week 8. Let the player feel the game first.
+  // Cash can still run out (that's math, not drama) but dimension-based deaths need room to breathe.
+  if (week >= 8) {
+    if (dims.energy <= 0) return { type: "burnout", label: "BURNED OUT", emoji: "🔥", line: `Burned out in week ${week}. Company was worth $${Math.round(arr / 10)}M without you.` };
+    if (dims.integrity <= 0) return { type: "disgraced", label: "DISGRACED", emoji: "🪦", line: `Disgraced in week ${week}. The Glassdoor reviews wrote themselves.` };
   }
-  if (cash < 200 && arr > 20) return { type: "forced_sale", label: "FORCED SALE", emoji: "\u{1F4C9}", line: `Forced sale at $${Math.round(arr * 0.8)}M in week ${week}. Took what you could get.` };
+  if (cash <= 0) return { type: "bankrupt", label: "BANKRUPT", emoji: "💀", line: `Bankrupt in week ${week}.` };
+  if (week >= 12 && dims.relationships <= 10 && dims.company > 40) return { type: "board_removed", label: "BOARD REMOVED", emoji: "🚪", line: `Board removed you in week ${week}. Company was worth $${Math.round(arr / 8)}M.` };
+  if (arr >= 60 && dims.integrity > 50 && dims.relationships > 40 && dims.energy > 30) return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${week} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
+  if (arr >= 40 && week >= 16) {
+    if (Math.random() < 0.12) return { type: "acquired", label: "ACQUIRED", emoji: "🤝", line: `Acquired for $${Math.round(arr * 2.2)}M in ${week} weeks.` };
+  }
+  if (cash < 200 && arr > 15) return { type: "forced_sale", label: "FORCED SALE", emoji: "📉", line: `Forced sale at $${Math.round(arr * 0.8)}M in week ${week}. Took what you could get.` };
   if (week >= 52) {
     const val = Math.round(arr * 1.5);
-    return { type: "time_up", label: "TIME'S UP", emoji: "\u{23F0}", line: `52 weeks. Company valued at $${val}M. The story just... stopped.` };
+    return { type: "time_up", label: "TIME'S UP", emoji: "⏰", line: `52 weeks. Company valued at $${val}M. The story just... stopped.` };
   }
   return null;
 }

@@ -59,7 +59,8 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
     <SceneBackground sceneKey="office_morning">
       <div style={{
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        minHeight: "100vh", padding: "40px 24px",
+        minHeight: "100vh",
+        padding: "max(40px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px)) max(40px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px))",
         fontFamily: FONTS.body,
       }}>
         {/* Phase 1: Time */}
@@ -150,18 +151,25 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
             <button
               onClick={() => setPhase(6)}
               style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                color: "#fff",
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                color: "rgba(255,255,255,0.6)",
                 padding: "14px 36px",
-                fontSize: 16,
+                fontSize: 15,
                 borderRadius: 50,
                 cursor: "pointer",
                 fontFamily: FONTS.body,
-                transition: "all 0.3s",
+                transition: "all 0.4s ease",
+                letterSpacing: "0.3px",
               }}
-              onMouseEnter={e => (e.target as HTMLButtonElement).style.background = "rgba(255,255,255,0.14)"}
-              onMouseLeave={e => (e.target as HTMLButtonElement).style.background = "rgba(255,255,255,0.08)"}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.10)";
+                e.currentTarget.style.color = "#fff";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                e.currentTarget.style.color = "rgba(255,255,255,0.6)";
+              }}
             >
               Open laptop
             </button>
@@ -193,7 +201,10 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                   #general &middot; now
                 </span>
               </div>
-              <div style={{
+              <div
+                aria-live="polite"
+                aria-label="Slack message"
+                style={{
                 fontSize: 16, color: "rgba(255,255,255,0.9)",
                 lineHeight: 1.6,
                 minHeight: 80,
@@ -211,32 +222,28 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                 <div style={{
                   display: "flex", gap: 12, justifyContent: "center",
                 }}>
-                  {["TRUST HIM", "TRUST YOURSELF"].map((choice) => (
+                  {["TRUST HIM", "TRUST YOURSELF"].map((choice, i) => (
                     <button
                       key={choice}
                       onClick={() => handleChoice(choice)}
                       style={{
-                        flex: 1,
                         background: "transparent",
-                        border: "1px solid rgba(255,255,255,0.15)",
-                        color: "#fff",
-                        padding: "18px 16px",
+                        border: "none",
+                        borderLeft: i === 1 ? "1px solid rgba(255,255,255,0.08)" : "none",
+                        color: "rgba(255,255,255,0.55)",
+                        padding: "20px 28px",
                         fontSize: 15,
-                        fontWeight: 600,
-                        letterSpacing: "1.5px",
-                        borderRadius: 12,
+                        fontWeight: 500,
+                        letterSpacing: "0.5px",
                         cursor: "pointer",
                         fontFamily: FONTS.body,
-                        transition: "all 0.3s",
-                        textTransform: "uppercase",
+                        transition: "all 0.4s ease",
                       }}
                       onMouseEnter={e => {
-                        (e.target as HTMLButtonElement).style.background = "rgba(255,255,255,0.08)";
-                        (e.target as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.3)";
+                        e.currentTarget.style.color = "#fff";
                       }}
                       onMouseLeave={e => {
-                        (e.target as HTMLButtonElement).style.background = "transparent";
-                        (e.target as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.15)";
+                        e.currentTarget.style.color = "rgba(255,255,255,0.55)";
                       }}
                     >
                       {choice}
@@ -252,19 +259,26 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
         {choiceMade && !showNameInput && (
           <div style={{
             maxWidth: 440, width: "100%",
-            textAlign: "center",
             animation: "fadeUp 0.6s ease",
           }}>
             <div style={{
-              fontFamily: FONTS.display,
-              fontSize: 20,
-              color: "rgba(255,255,255,0.7)",
-              fontStyle: "italic",
-              lineHeight: 1.6,
+              background: "rgba(255,255,255,0.04)",
+              borderRadius: 20,
+              border: "1px solid rgba(255,255,255,0.06)",
+              padding: "32px 28px",
+              textAlign: "center",
             }}>
-              {choiceMade === "TRUST HIM"
-                ? "Marcus exhaled. For the first time in weeks, someone listened. Priya raised an eyebrow but said nothing. The rebuild started that afternoon."
-                : "The room went quiet. Marcus looked at his screen. Priya leaned forward — she'd been waiting for this. David would hear about it by tomorrow."}
+              <div style={{
+                fontFamily: FONTS.display,
+                fontSize: 18,
+                color: "rgba(255,255,255,0.8)",
+                fontStyle: "italic",
+                lineHeight: 1.7,
+              }}>
+                {choiceMade === "TRUST HIM"
+                  ? "Marcus exhaled. For the first time in weeks, someone listened. Priya raised an eyebrow but said nothing. The rebuild started that afternoon."
+                  : "The room went quiet. Marcus looked at his screen. Priya leaned forward — she'd been waiting for this. David would hear about it by tomorrow."}
+              </div>
             </div>
           </div>
         )}
@@ -272,71 +286,93 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
         {showNameInput && (
           <div style={{
             maxWidth: 440, width: "100%",
-            textAlign: "center",
             animation: "fadeUp 0.8s ease",
           }}>
+            {/* Frosted glass panel */}
             <div style={{
-              fontSize: 15,
-              color: "rgba(255,255,255,0.5)",
-              marginBottom: 8,
+              background: "rgba(255,255,255,0.04)",
+              borderRadius: 24,
+              border: "1px solid rgba(255,255,255,0.08)",
+              padding: "40px 32px 36px",
+              textAlign: "center",
             }}>
-              That was one decision. The game has fifty-two weeks of them.
-            </div>
-            <div style={{
-              fontSize: 13,
-              color: "rgba(255,255,255,0.3)",
-              marginBottom: 32,
-              fontFamily: FONTS.mono,
-            }}>
-              ~20 min &middot; 52 weeks &middot; &infin; endings
-            </div>
-            <div style={{ marginBottom: 24 }}>
               <div style={{
-                fontSize: 14,
-                color: "rgba(255,255,255,0.4)",
-                marginBottom: 8,
-              }}>
-                Name your company
-              </div>
-              <input
-                value={companyName}
-                onChange={e => setCompanyName(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleStart()}
-                placeholder="e.g. Nova AI"
-                autoFocus
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  borderRadius: 12,
-                  padding: "14px 20px",
-                  width: "100%",
-                  maxWidth: 300,
-                  fontSize: 18,
-                  color: "#fff",
-                  textAlign: "center",
-                  fontFamily: FONTS.display,
-                  outline: "none",
-                }}
-              />
-            </div>
-            <button
-              onClick={handleStart}
-              disabled={!companyName.trim()}
-              style={{
-                background: companyName.trim() ? "#fff" : "rgba(255,255,255,0.1)",
-                color: companyName.trim() ? "#0a0a0f" : "rgba(255,255,255,0.3)",
-                border: "none",
-                padding: "14px 40px",
                 fontSize: 16,
-                fontWeight: 600,
-                borderRadius: 50,
-                cursor: companyName.trim() ? "pointer" : "default",
+                color: "rgba(255,255,255,0.85)",
+                marginBottom: 6,
+                lineHeight: 1.6,
                 fontFamily: FONTS.body,
-                transition: "all 0.3s",
-              }}
-            >
-              Begin
-            </button>
+              }}>
+                That was one decision. The game has fifty-two weeks of them.
+              </div>
+              <div style={{
+                fontSize: 12,
+                color: "rgba(255,255,255,0.3)",
+                marginBottom: 36,
+                fontFamily: FONTS.mono,
+                letterSpacing: "0.5px",
+              }}>
+                ~20 min · 52 weeks · ∞ endings
+              </div>
+              <div style={{ marginBottom: 28 }}>
+                <label
+                  htmlFor="company-name"
+                  style={{
+                  fontSize: 11,
+                  color: "rgba(255,255,255,0.4)",
+                  marginBottom: 10,
+                  display: "block",
+                  fontFamily: FONTS.mono,
+                  letterSpacing: "1.5px",
+                  textTransform: "uppercase",
+                }}>
+                  Name your company
+                </label>
+                <input
+                  id="company-name"
+                  value={companyName}
+                  onChange={e => setCompanyName(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleStart()}
+                  placeholder="e.g. Nova AI"
+                  autoFocus
+                  style={{
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    borderRadius: 12,
+                    padding: "16px 20px",
+                    width: "100%",
+                    maxWidth: 300,
+                    fontSize: 20,
+                    color: "#fff",
+                    textAlign: "center",
+                    fontFamily: FONTS.display,
+                    outline: "none",
+                    transition: "border-color 0.3s ease",
+                  }}
+                  onFocus={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"}
+                  onBlur={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"}
+                />
+              </div>
+              <button
+                onClick={handleStart}
+                disabled={!companyName.trim()}
+                style={{
+                  background: companyName.trim() ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.08)",
+                  color: companyName.trim() ? "#0a0a0f" : "rgba(255,255,255,0.25)",
+                  border: "none",
+                  padding: "14px 44px",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  borderRadius: 50,
+                  cursor: companyName.trim() ? "pointer" : "default",
+                  fontFamily: FONTS.body,
+                  transition: "all 0.4s ease",
+                  letterSpacing: "0.3px",
+                }}
+              >
+                Begin
+              </button>
+            </div>
           </div>
         )}
       </div>

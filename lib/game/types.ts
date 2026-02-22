@@ -19,6 +19,11 @@ export interface Tension {
   leftEffect: TensionEffect;
   rightEffect: TensionEffect;
   category: string;
+  // Path dependency: tension only appears if a specific past choice was made
+  requires?: { choice: string };
+  // Foreshadowing: a line that appears after choosing left or right, hinting at consequences
+  leftForeshadow?: string;
+  rightForeshadow?: string;
 }
 
 export interface IndexedTension extends Tension {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { FONTS } from '@/lib/game/constants';
 import { Ending, GameDimensions, Decision } from '@/lib/game/types';
 import { getValuation } from '@/lib/game/engine';
@@ -22,8 +22,7 @@ interface EndgameProps {
 export function Endgame({ ending, arr, dims, decisions, weekLog, companyName, onPlayAgain }: EndgameProps) {
   const [headline, setHeadline] = useState<string | null>(null);
   const [mirror, setMirror] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  void copied;
+  // dims needed for share image
   const valuation = getValuation(ending, arr);
   const rank = getPlayerRank();
 
@@ -66,7 +65,7 @@ export function Endgame({ ending, arr, dims, decisions, weekLog, companyName, on
         rank={rank}
         headline={headline}
         mirror={mirror || "You played the only way you knew how."}
-        onCopy={() => setCopied(true)}
+        dims={dims}
         onPlayAgain={onPlayAgain}
       />
     </SceneBackground>

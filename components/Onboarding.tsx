@@ -24,27 +24,32 @@ export function Onboarding({ onStart }: OnboardingProps) {
 
   return (
     <div
+      role={phase >= 4 ? "button" : undefined}
+      tabIndex={phase >= 4 ? 0 : undefined}
+      aria-label={phase >= 4 ? "Start the game" : undefined}
       onClick={phase >= 4 ? onStart : undefined}
+      onKeyDown={phase >= 4 ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onStart(); } } : undefined}
       style={{
         position: "fixed", inset: 0, cursor: phase >= 4 ? "pointer" : "default",
-        backgroundImage: "url(https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=1400&q=85)",
-        backgroundSize: "cover",
-        backgroundPosition: "center 40%",
+        background: "#0a0a0f",
         overflow: "hidden",
+        outline: "none",
       }}
     >
-      {/* Light warm overlay */}
+      {/* Warm ambient gradient */}
       <div style={{
         position: "absolute", inset: 0,
-        background: "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.65) 85%, rgba(0,0,0,0.82) 100%)",
-      }} />
-
-      {/* Subtle warm vignette */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.2) 100%)",
+        background: "radial-gradient(ellipse at 30% 80%, rgba(45,30,15,0.35) 0%, transparent 60%)",
         opacity: phase >= 1 ? 1 : 0,
         transition: "opacity 3s ease",
+      }} />
+
+      {/* Second subtle light source */}
+      <div style={{
+        position: "absolute", inset: 0,
+        background: "radial-gradient(ellipse at 70% 20%, rgba(20,25,40,0.25) 0%, transparent 50%)",
+        opacity: phase >= 2 ? 1 : 0,
+        transition: "opacity 4s ease",
         pointerEvents: "none",
       }} />
 
@@ -54,7 +59,7 @@ export function Onboarding({ onStart }: OnboardingProps) {
         display: "flex", flexDirection: "column",
         justifyContent: "flex-end",
         minHeight: "100vh",
-        padding: "0 32px 60px",
+        padding: "env(safe-area-inset-top, 0px) max(32px, env(safe-area-inset-right, 0px)) max(60px, env(safe-area-inset-bottom, 0px)) max(32px, env(safe-area-inset-left, 0px))",
         fontFamily: FONTS.body,
       }}>
         {/* Phase 1: Ambient scene-setting text */}
@@ -85,7 +90,7 @@ export function Onboarding({ onStart }: OnboardingProps) {
           transition: "all 1.2s ease",
           marginBottom: 14,
         }}>
-          <div style={{
+          <h1 style={{
             fontFamily: FONTS.display,
             fontSize: "clamp(38px, 8vw, 56px)",
             fontWeight: 700,
@@ -94,8 +99,8 @@ export function Onboarding({ onStart }: OnboardingProps) {
             lineHeight: 1.05,
           }}>
             The Room
-          </div>
-          <div style={{
+          </h1>
+          <p style={{
             fontSize: 16,
             color: "rgba(255,255,255,0.55)",
             fontWeight: 300,
@@ -103,7 +108,7 @@ export function Onboarding({ onStart }: OnboardingProps) {
             lineHeight: 1.4,
           }}>
             Build a company. See how the story ends.
-          </div>
+          </p>
         </div>
 
         {/* Phase 3: Social proof */}
