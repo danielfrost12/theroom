@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FONTS } from '@/lib/game/constants';
+import { FONTS, COLORS } from '@/lib/game/constants';
 import { SceneBackground } from './SceneBackground';
 
 interface CinematicOpeningProps {
@@ -49,7 +49,7 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
 
   const handleChoice = (choice: string) => {
     setChoiceMade(choice);
-    setTimeout(() => setShowNameInput(true), 2500);
+    setTimeout(() => setShowNameInput(true), 4500);
   };
 
   const handleStart = () => {
@@ -232,8 +232,8 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                       style={{
                         background: "transparent",
                         border: "none",
-                        borderLeft: i === 1 ? "1px solid rgba(255,255,255,0.08)" : "none",
-                        color: "rgba(255,255,255,0.55)",
+                        borderLeft: i === 1 ? "1px solid rgba(255,238,210,0.1)" : "none",
+                        color: COLORS.warm,
                         padding: "20px 28px",
                         fontSize: 15,
                         fontWeight: 500,
@@ -243,10 +243,10 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                         transition: "all 0.4s ease",
                       }}
                       onMouseEnter={e => {
-                        e.currentTarget.style.color = "#fff";
+                        e.currentTarget.style.color = COLORS.warmHover;
                       }}
                       onMouseLeave={e => {
-                        e.currentTarget.style.color = "rgba(255,255,255,0.55)";
+                        e.currentTarget.style.color = COLORS.warm;
                       }}
                     >
                       {choice}

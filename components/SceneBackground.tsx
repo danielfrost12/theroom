@@ -24,35 +24,36 @@ function moodToGradient(mood: { energy: number; tension: number; relationships: 
   const { energy, tension, relationships, integrity } = mood;
 
   // Base warmth: energy drives warm vs cold
-  // High energy = warm amber. Low energy = cold blue-grey.
-  const warmR = Math.round(15 + (energy / 100) * 35);  // 15-50
-  const warmG = Math.round(10 + (energy / 100) * 22);  // 10-32
-  const warmB = Math.round(8 + (1 - energy / 100) * 30); // 38-8
+  // High energy = warm amber/honey. Low energy = cool steel-blue.
+  // Values pushed significantly higher so the gradient is VISIBLE on dark backgrounds.
+  const warmR = Math.round(40 + (energy / 100) * 80);   // 40-120 (was 15-50)
+  const warmG = Math.round(25 + (energy / 100) * 45);   // 25-70  (was 10-32)
+  const warmB = Math.round(10 + (1 - energy / 100) * 50); // 60-10 (was 38-8)
 
   // Tension adds red/urgency
-  const tensionR = Math.round((tension / 100) * 15);
-  const tensionShift = tension > 70 ? 0.12 : tension > 40 ? 0.06 : 0;
+  const tensionR = Math.round((tension / 100) * 25);     // 0-25 (was 0-15)
+  const tensionShift = tension > 70 ? 0.15 : tension > 40 ? 0.08 : 0;
 
   // Low integrity = bruised purple undertone
-  const intPurple = integrity < 40 ? Math.round((1 - integrity / 40) * 20) : 0;
+  const intPurple = integrity < 40 ? Math.round((1 - integrity / 40) * 30) : 0;
 
   // Low relationships = isolating — gradient pulls to edges
   const relPosition = relationships < 35 ? "80% 70%" : relationships > 65 ? "35% 35%" : "50% 40%";
 
-  // Primary light source
-  const r1 = Math.min(55, warmR + tensionR);
-  const g1 = Math.max(5, warmG - Math.round(tensionShift * 100));
+  // Primary light source — the warm glow in the room
+  const r1 = Math.min(140, warmR + tensionR);
+  const g1 = Math.max(10, warmG - Math.round(tensionShift * 100));
   const b1 = warmB + intPurple;
-  const alpha1 = 0.25 + (tension / 100) * 0.2; // More visible when tense
+  const alpha1 = 0.18 + (tension / 100) * 0.14; // 0.18-0.32 — visible but not garish
 
-  // Secondary ambient — always cooler, subtler
-  const r2 = Math.round(12 + (1 - energy / 100) * 10);
-  const g2 = Math.round(15 + (relationships / 100) * 12);
-  const b2 = Math.round(20 + (1 - integrity / 100) * 15);
+  // Secondary ambient — slightly warmer than before, gives depth
+  const r2 = Math.round(20 + (1 - energy / 100) * 15);
+  const g2 = Math.round(22 + (relationships / 100) * 18);
+  const b2 = Math.round(30 + (1 - integrity / 100) * 20);
 
   return {
     primary: `rgba(${r1},${g1},${b1},${alpha1.toFixed(2)})`,
-    secondary: `rgba(${r2},${g2},${b2},0.15)`,
+    secondary: `rgba(${r2},${g2},${b2},0.12)`,
     position1: relPosition,
     position2: tension > 60 ? "70% 80%" : "50% 70%",
   };
@@ -89,9 +90,9 @@ export function SceneBackground({ sceneKey, children, mood }: SceneBackgroundPro
   const breathDuration = effectiveMood.tension > 60 ? 6 : effectiveMood.tension > 35 ? 10 : 16;
 
   // Dimension-as-atmosphere: the world gets darker as things deteriorate
-  // Low average = darker gradient (less visible light source)
+  // Low average = darker gradient — but never fully gone. Even dying has light.
   const dimAvg = (effectiveMood.energy + effectiveMood.relationships + effectiveMood.integrity) / 3;
-  const gradientOpacity = dimAvg > 60 ? 1.0 : dimAvg > 35 ? 0.7 : 0.4;
+  const gradientOpacity = dimAvg > 60 ? 1.0 : dimAvg > 35 ? 0.8 : 0.55;
 
   // Vignette intensifies with isolation (low relationships) and corruption (low integrity)
   const vignetteStrength = Math.min(0.6,

@@ -38,18 +38,18 @@ export function Onboarding({ onStart }: OnboardingProps) {
         touchAction: "manipulation",
       }}
     >
-      {/* Warm ambient gradient */}
+      {/* Warm ambient gradient — the first thing you see should feel like a room, not a void */}
       <div style={{
         position: "absolute", inset: 0,
-        background: "radial-gradient(ellipse at 30% 80%, rgba(45,30,15,0.35) 0%, transparent 60%)",
+        background: "radial-gradient(ellipse at 30% 80%, rgba(90,55,20,0.3) 0%, transparent 55%)",
         opacity: phase >= 1 ? 1 : 0,
         transition: "opacity 3s ease",
       }} />
 
-      {/* Second subtle light source */}
+      {/* Second subtle light source — cool complement */}
       <div style={{
         position: "absolute", inset: 0,
-        background: "radial-gradient(ellipse at 70% 20%, rgba(20,25,40,0.25) 0%, transparent 50%)",
+        background: "radial-gradient(ellipse at 70% 20%, rgba(30,35,60,0.2) 0%, transparent 50%)",
         opacity: phase >= 2 ? 1 : 0,
         transition: "opacity 4s ease",
         pointerEvents: "none",

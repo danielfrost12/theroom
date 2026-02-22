@@ -377,7 +377,7 @@ export const TENSIONS: Tension[] = [
   },
 
   // --- FOURTH WALL MOMENT ---
-  // Around week 28-35, the game breaks. One moment that isn't about the company.
+  // Around week 14-17 (late Act 2), the game breaks. One moment that isn't about the company.
   // It's about the person playing. The silence after this one is the point.
   {
     left: "Reply",
@@ -700,10 +700,16 @@ export const COLORS = {
   danger:  { bar: 'rgba(248,113,113,0.6)', text: 'rgba(248,113,113,0.95)' },
   // Semantic text colors
   foreshadow: 'rgba(255,255,255,0.25)',
-  interiority: 'rgba(255,255,255,0.4)',
+  interiority: 'rgba(255,238,220,0.45)',   // warm off-white — inner voice has temperature
   context: 'rgba(255,255,255,0.75)',
   muted: 'rgba(255,255,255,0.3)',
   bg: '#0a0a0f',
+  // Warmth — the human temperature of the game
+  // Not white, not neon. Warm off-white like lamplight on paper.
+  warm: 'rgba(255,238,210,0.6)',            // choice text — human warmth
+  warmHover: 'rgba(255,244,225,0.9)',       // hover state — comes alive
+  warmMuted: 'rgba(255,238,210,0.3)',       // subtle warm hint
+  warmGlow: 'rgba(200,160,100,0.06)',       // background tint for milestone/surprise cards
 };
 
 // Shared helper: dimension value → color

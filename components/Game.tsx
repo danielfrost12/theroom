@@ -614,7 +614,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             }}>
               <div style={{
                 fontFamily: FONTS.display, fontSize: 17,
-                color: "rgba(255,255,255,0.45)", fontStyle: "italic",
+                color: "rgba(255,238,220,0.45)", fontStyle: "italic",
                 lineHeight: 1.7, maxWidth: 340, margin: "0 auto",
               }}>
                 {breathingMoment}
@@ -712,19 +712,19 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             animation: "dropIn 0.8s ease", padding: "40px 20px",
           }}>
             <div style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: COLORS.warmGlow,
+              border: "1px solid rgba(255,238,210,0.08)",
               borderRadius: 20, padding: "40px 28px",
               maxWidth: 400, textAlign: "center",
             }}>
               <div style={{
                 fontFamily: FONTS.display, fontSize: "clamp(22px, 5vw, 28px)",
-                color: "#fff", fontWeight: 600, lineHeight: 1.3, marginBottom: 16,
+                color: "rgba(255,248,235,0.95)", fontWeight: 600, lineHeight: 1.3, marginBottom: 16,
               }}>
                 {surpriseEvent.message}
               </div>
               <div style={{
-                fontSize: 14, color: "rgba(255,255,255,0.4)",
+                fontSize: 14, color: "rgba(255,238,210,0.45)",
                 fontStyle: "italic", fontFamily: FONTS.display, lineHeight: 1.6,
               }}>
                 {surpriseEvent.subtext}
@@ -736,8 +736,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
         {/* MILESTONE — inline card, doesn't block the flow */}
         {milestone && !loading && !narrative && !compressing && !surpriseEvent && (
           <div style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: COLORS.warmGlow,
+            border: "1px solid rgba(255,238,210,0.08)",
             borderRadius: 16,
             padding: "20px 24px",
             marginBottom: 20,
@@ -746,13 +746,13 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           }}>
             <div style={{
               fontFamily: FONTS.display, fontSize: 18,
-              color: "#fff", fontWeight: 600, lineHeight: 1.3,
+              color: "rgba(255,248,235,0.95)", fontWeight: 600, lineHeight: 1.3,
               marginBottom: 8,
             }}>
               {milestone.message}
             </div>
             <div style={{
-              fontSize: 13, color: "rgba(255,255,255,0.4)",
+              fontSize: 13, color: "rgba(255,238,210,0.45)",
               fontFamily: FONTS.display, fontStyle: "italic", lineHeight: 1.6,
             }}>
               {milestone.subtext}
@@ -1045,17 +1045,17 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                     onClick={() => handleChoice(opt.label, opt.effects)}
                     style={{
                       background: "transparent", border: "none",
-                      color: "rgba(255,255,255,0.55)",
+                      color: COLORS.warm,
                       padding: "20px 28px",
                       fontSize: stakes === 'critical' ? 16 : 15,
                       fontWeight: 500, letterSpacing: "0.5px",
                       cursor: "pointer", fontFamily: FONTS.body,
                       transition: "all 0.3s ease", lineHeight: 1.3,
                       position: "relative",
-                      borderLeft: i === 1 ? "1px solid rgba(255,255,255,0.08)" : "none",
+                      borderLeft: i === 1 ? "1px solid rgba(255,238,210,0.1)" : "none",
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.color = "#fff"; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
+                    onMouseEnter={e => { e.currentTarget.style.color = COLORS.warmHover; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = COLORS.warm; }}
                   >
                     {opt.label}
                   </button>
@@ -1078,13 +1078,13 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                   }}
                   style={{
                     background: "transparent", border: "none",
-                    color: "rgba(255,255,255,0.4)",
+                    color: COLORS.warmMuted,
                     padding: "20px 28px", fontSize: 15, fontWeight: 400,
                     cursor: "pointer", fontFamily: FONTS.body,
                     transition: "all 0.3s ease",
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
+                  onMouseEnter={e => { e.currentTarget.style.color = COLORS.warm; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = COLORS.warmMuted; }}
                 >
                   {tension.forcedChoice === 'left' ? tension.left : tension.right}
                 </button>
@@ -1097,13 +1097,13 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                 onClick={() => setShowCustom(true)}
                 style={{
                   background: "transparent", border: "none",
-                  color: "rgba(255,255,255,0.25)", fontSize: 13,
+                  color: COLORS.warmMuted, fontSize: 13,
                   cursor: "pointer", fontFamily: FONTS.mono,
                   padding: "8px 0", transition: "color 0.3s",
                   textAlign: "center",
                 }}
-                onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
-                onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
+                onMouseEnter={e => e.currentTarget.style.color = COLORS.warm}
+                onMouseLeave={e => e.currentTarget.style.color = COLORS.warmMuted}
               >
                 Neither &mdash; I have my own idea &rarr;
               </button>

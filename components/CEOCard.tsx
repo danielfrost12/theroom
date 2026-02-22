@@ -54,7 +54,7 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
     { label: "Company", value: dims.company },
     { label: "People", value: dims.relationships },
     { label: "Energy", value: dims.energy },
-    { label: "Integrity", value: dims.integrity },
+    { label: "Ethics", value: dims.integrity },
   ];
 
   return (

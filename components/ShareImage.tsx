@@ -392,20 +392,7 @@ export function ShareImage({
               </div>
             </div>
 
-            {/* Footer */}
-            <div style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}>
-              <div style={{
-                fontSize: 10,
-                color: "rgba(255,255,255,0.15)",
-                fontFamily: "'JetBrains Mono', monospace",
-              }}>
-                behindtheroom.com
-              </div>
-            </div>
+            {/* Footer — behindtheroom.com already in CTA above */}
           </div>
         </div>
       </div>
