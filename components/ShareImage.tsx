@@ -13,6 +13,7 @@ interface ShareImageProps {
   dims: GameDimensions;
   headline: string;
   archetype: string;
+  pivotalMoments: string[];
 }
 
 // Web Share API payload type
@@ -32,7 +33,7 @@ const ENDING_ACCENTS: Record<string, { primary: string; glow: string }> = {
 
 
 export function ShareImage({
-  ending, companyName, valuation, weekLog, dims, headline, archetype
+  ending, companyName, valuation, weekLog, dims, headline, archetype, pivotalMoments
 }: ShareImageProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
@@ -300,6 +301,39 @@ export function ShareImage({
                 ))}
               </div>
             </div>
+
+            {/* Pivotal moments */}
+            {pivotalMoments.length > 0 && (
+              <div style={{
+                borderTop: "1px solid rgba(255,255,255,0.04)",
+                paddingTop: 12,
+                marginBottom: 12,
+              }}>
+                <div style={{
+                  fontSize: 8,
+                  color: "rgba(255,255,255,0.2)",
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: "1.5px",
+                  textTransform: "uppercase" as const,
+                  marginBottom: 6,
+                  textAlign: "center" as const,
+                }}>
+                  DEFINING MOMENTS
+                </div>
+                {pivotalMoments.slice(0, 3).map((m, i) => (
+                  <div key={i} style={{
+                    fontSize: 10,
+                    color: "rgba(255,255,255,0.3)",
+                    fontFamily: "'DM Sans', sans-serif",
+                    lineHeight: 1.4,
+                    textAlign: "center" as const,
+                    marginBottom: 2,
+                  }}>
+                    {m}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Headline quote */}
             <div style={{

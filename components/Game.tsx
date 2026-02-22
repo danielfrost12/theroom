@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { FONTS, COLORS, TEMPO } from '@/lib/game/constants';
 import { GameDimensions, Ending, Decision, IndexedTension, TensionFormat } from '@/lib/game/types';
-import { getSceneForState, getBreathingMoment, getTension, checkEnding, checkSurpriseEvent, checkMilestone, getTensionStakes, detectArchetype, getArchetypeBias, type SurpriseEvent, type Milestone, type TensionStakes } from '@/lib/game/engine';
+import { getSceneForState, getBreathingMoment, getCompressionLine, getAct, getTension, checkEnding, checkSurpriseEvent, checkMilestone, getTensionStakes, detectArchetype, getArchetypeBias, type SurpriseEvent, type Milestone, type TensionStakes } from '@/lib/game/engine';
 import { generateNarrative } from '@/lib/ai/narrative';
 import { SceneBackground } from './SceneBackground';
 import { DimBar } from './DimBar';
@@ -194,7 +194,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     setNarrative(null);
     setForeshadow(null);
     setShowBreathing(true);
-    setBreathingMoment(getBreathingMoment(dims));
+    setBreathingMoment(getBreathingMoment(dims, week));
 
     // Check for foreshadowing on this choice
     if (tension) {
@@ -230,19 +230,36 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       }
     }
 
-    // ARR growth
+    // ARR growth — realistic startup trajectory
+    // Week 1: $0 ARR. By week 52, exceptional founders might hit $10-20M.
+    // $60M+ is IPO territory. Growth compounds but starts tiny.
+    const newWeek = week + 1;
+    const act = getAct(newWeek);
     let arrDelta: number;
-    if (newDims.company >= 55) arrDelta = Math.floor(Math.random() * 6) + 4;
-    else if (newDims.company >= 35) arrDelta = Math.floor(Math.random() * 4) + 1;
-    else if (newDims.company >= 15) arrDelta = Math.floor(Math.random() * 3);
-    else arrDelta = -(Math.floor(Math.random() * 3) + 1);
+    if (act === 1) {
+      // Early stage: tiny increments. You're pre-product-market-fit.
+      if (newDims.company >= 55) arrDelta = Math.random() < 0.6 ? 1 : 0;
+      else if (newDims.company >= 35) arrDelta = Math.random() < 0.3 ? 1 : 0;
+      else arrDelta = Math.random() < 0.2 ? -1 : 0;
+    } else if (act === 2) {
+      // Growth stage: acceleration possible but not guaranteed
+      const growthRate = newDims.company >= 55 ? 0.08 : newDims.company >= 40 ? 0.04 : -0.03;
+      arrDelta = Math.round(Math.max(arr, 1) * growthRate * (0.5 + Math.random()));
+      // Cap single-week growth
+      arrDelta = Math.min(arrDelta, 4);
+    } else {
+      // Late stage: momentum-dependent. Big jumps possible if you earned them.
+      const growthRate = newDims.company >= 60 ? 0.10 : newDims.company >= 40 ? 0.05 : -0.05;
+      arrDelta = Math.round(Math.max(arr, 1) * growthRate * (0.5 + Math.random()));
+      arrDelta = Math.min(arrDelta, 6);
+    }
     const newArr = Math.max(0, arr + arrDelta);
 
-    // Cash burn
-    const weeklyBurn = 45 + Math.floor(arr * 0.8);
-    const weeklyRevenue = Math.floor(newArr * 2.8);
+    // Cash burn — $2.5M seed burns ~$50K/week, scaling with team size
+    // Revenue comes from ARR (ARR/52 per week, with slight lag)
+    const weeklyBurn = 40 + Math.floor(newArr * 1.5); // burn scales with growth
+    const weeklyRevenue = Math.floor(newArr * 1000 / 52); // ARR is in $M, cash in $K
     const newCash = Math.max(0, cash - weeklyBurn + weeklyRevenue);
-    const newWeek = week + 1;
 
     setDims(newDims);
     setArr(newArr);
@@ -310,12 +327,14 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           setNarrative(null);
           setCompressing(true);
           setCompressWeeks(skipWeeks);
-          setCompressMoment(getBreathingMoment(newDims));
+          setCompressMoment(getCompressionLine(newDims, newWeek, newArr));
           addTimeout(() => {
-            const burnPerWeek = 50 + Math.floor(newArr * 1.2);
-            const revPerWeek = Math.floor(newArr * 2.5);
+            const burnPerWeek = 40 + Math.floor(newArr * 1.5);
+            const revPerWeek = Math.floor(newArr * 1000 / 52);
             const compressedCash = Math.max(0, newCash + skipWeeks * (revPerWeek - burnPerWeek));
-            const compressedArr = Math.max(0, newArr + (newDims.company >= 50 ? Math.floor(Math.random() * skipWeeks * 2) : -Math.floor(Math.random() * skipWeeks)));
+            // Compression ARR: steady compound growth matching the new realistic pace
+            const compGrowthRate = newDims.company >= 50 ? 0.05 : newDims.company >= 35 ? 0.02 : -0.02;
+            const compressedArr = Math.max(0, Math.round(newArr * (1 + compGrowthRate * skipWeeks)));
             const compressedWeek = newWeek + skipWeeks;
 
             const driftDims = { ...newDims };
@@ -401,6 +420,18 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                 <div style={{
                   fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: FONTS.mono, marginTop: 2,
                 }}>Week {week} of 52</div>
+                {week === 16 && (
+                  <div style={{
+                    fontSize: 10, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
+                    marginTop: 2, letterSpacing: "1px",
+                  }}>the grind begins</div>
+                )}
+                {week === 36 && (
+                  <div style={{
+                    fontSize: 10, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
+                    marginTop: 2, letterSpacing: "1px",
+                  }}>the reckoning</div>
+                )}
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{

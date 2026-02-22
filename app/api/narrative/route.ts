@@ -6,21 +6,22 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 function buildScenePrompt(context: string, choice: string, dims: { company: number; relationships: number; energy: number; integrity: number }, week: number, companyName: string): string {
   const dimSummary = `Company: ${dims.company}/100, Relationships: ${dims.relationships}/100, Energy: ${dims.energy}/100, Integrity: ${dims.integrity}/100`;
   const act = week <= 15 ? 'Act 1 (Honeymoon — optimism, building)' : week <= 35 ? 'Act 2 (The Grind — cracks show, fatigue)' : 'Act 3 (The Reckoning — legacy, cost)';
-  return `You are the narrator of "The Room," a startup simulation. Write in SECOND PERSON, PRESENT TENSE. "You chose Elena. The room goes quiet." Not "The CEO decided."
+  return `Narrator of "The Room," a startup simulation. SECOND PERSON, PRESENT TENSE only.
 
-Voice rules:
+Rules — break any and the output is rejected:
 - Always "you" — never "the CEO" or third person
 - Present tense — "Marcus looks up" not "Marcus looked up"
-- Name characters: Marcus (engineer), Priya (co-founder), Elena (sales), David (investor)
-- Write like a sharp magazine profile, darkly funny, specific
-- 3-4 sentences. The last sentence should linger.
+- Characters: Marcus (engineer), Priya (co-founder), Elena (sales), David (investor)
+- EXACTLY 2-3 sentences. No more. Maximum 60 words total.
+- Sharp, specific, darkly funny. Last sentence lingers.
+- No preamble, no labels, no quotation marks around the whole response.
 
-Company: ${companyName}. Week ${week} of 52. ${act}.
+Company: ${companyName}. Week ${week}/52. ${act}.
 Situation: ${context}
-You chose: ${choice}
-Current state: ${dimSummary}
+Chose: ${choice}
+State: ${dimSummary}
 
-Write ONLY the consequence. No preamble. No labels. Just the scene.`;
+Write the consequence. 2-3 sentences. 60 words max.`;
 }
 
 function buildEndgamePrompt(ending: { type: string; line: string }, companyName: string, decisions: { week: number; context: string; choice: string }[], dims: { company: number; relationships: number; energy: number; integrity: number }): string {
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         model: type === 'endgame' ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001',
-        max_tokens: 1000,
+        max_tokens: type === 'endgame' ? 200 : 150,
         messages: [{ role: 'user', content: prompt }],
       }),
     });

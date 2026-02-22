@@ -43,9 +43,9 @@ export async function generateEndgameNarrative(
 export function getFallbackNarrative(choice: string, context: string): string {
   void context;
   const narratives = [
-    `You chose "${choice}" and the office felt it immediately. Marcus looked up from his screen for the first time all day. Priya nodded slowly — she'd been waiting to see which way you'd go. David would hear about this by tomorrow.`,
-    `The decision landed like a stone in still water. Elena was the first to react — a half-smile that could mean anything. Marcus went back to his code, typing faster than before. The Slack channel stayed silent for forty-five minutes.`,
-    `"${choice}" — two words that changed the trajectory of the next month. Your co-founder exhaled audibly. The engineer in the corner started updating his resume, then stopped. The investor's assistant called to reschedule your Thursday catch-up.`,
+    `You chose "${choice}" and the office felt it. Marcus looked up. Priya nodded slowly.`,
+    `The decision landed quietly. Elena reacted first — a half-smile that could mean anything. Slack went silent.`,
+    `"${choice}." Your co-founder exhaled. The engineer in the corner paused, then kept typing.`,
   ];
   return narratives[Math.floor(Math.random() * narratives.length)];
 }

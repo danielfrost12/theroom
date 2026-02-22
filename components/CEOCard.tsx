@@ -16,6 +16,7 @@ interface CEOCardProps {
   mirror: string;
   dims: GameDimensions;
   archetype: string;
+  pivotalMoments: string[];
   onPlayAgain: () => void;
 }
 
@@ -44,7 +45,7 @@ function viralSummary(weekCount: number, dims: GameDimensions, ending: Ending): 
   return `${weekCount} weeks. Chose ${chose} over ${lost}.`;
 }
 
-export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRuns, headline, mirror, dims, archetype, onPlayAgain }: CEOCardProps) {
+export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRuns, headline, mirror, dims, archetype, pivotalMoments, onPlayAgain }: CEOCardProps) {
   const playCount = getPlayCount();
   const bestVal = getBestValuation();
   const summary = viralSummary(weekLog.length, dims, ending);
@@ -259,6 +260,39 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
             </div>
           </div>
 
+          {/* Pivotal moments — the defining choices */}
+          {pivotalMoments.length > 0 && (
+            <div style={{
+              borderTop: "1px solid rgba(255,255,255,0.04)",
+              paddingTop: 12,
+              marginBottom: 12,
+            }}>
+              <div style={{
+                fontSize: 9,
+                color: "rgba(255,255,255,0.2)",
+                fontFamily: FONTS.mono,
+                letterSpacing: "1.5px",
+                textTransform: "uppercase" as const,
+                marginBottom: 8,
+                textAlign: "center" as const,
+              }}>
+                DEFINING MOMENTS
+              </div>
+              {pivotalMoments.slice(0, 3).map((m, i) => (
+                <div key={i} style={{
+                  fontSize: 11,
+                  color: "rgba(255,255,255,0.35)",
+                  fontFamily: FONTS.body,
+                  lineHeight: 1.5,
+                  textAlign: "center" as const,
+                  marginBottom: 3,
+                }}>
+                  {m}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Viral summary — the sentence people screenshot */}
           <div style={{
             textAlign: "center" as const,
@@ -325,6 +359,7 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
           dims={dims}
           headline={headline}
           archetype={archetype}
+          pivotalMoments={pivotalMoments}
         />
 
         <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>

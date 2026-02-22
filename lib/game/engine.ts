@@ -248,22 +248,28 @@ export interface Milestone {
 
 export const MILESTONES: Milestone[] = [
   {
-    message: "Your first $10M ARR.",
+    message: "Your first real revenue.",
+    subtext: "Not a lot. But it's real. Someone paid for what you built.",
+    condition: ({ arr }) => arr >= 1,
+    once: "first_revenue",
+  },
+  {
+    message: "$5M ARR.",
     subtext: "The team celebrated with cheap champagne. Someone cried.",
+    condition: ({ arr }) => arr >= 5,
+    once: "arr_5",
+  },
+  {
+    message: "$10M ARR.",
+    subtext: "David called to congratulate you. First time he's called just to say 'well done.'",
     condition: ({ arr }) => arr >= 10,
     once: "arr_10",
   },
   {
-    message: "Your first $25M ARR.",
-    subtext: "David called to congratulate you. First time he's called just to say 'well done.'",
+    message: "$25M ARR.",
+    subtext: "The office is different now. Bigger. Quieter. More strangers.",
     condition: ({ arr }) => arr >= 25,
     once: "arr_25",
-  },
-  {
-    message: "$50M ARR.",
-    subtext: "The office is different now. Bigger. Quieter. More strangers.",
-    condition: ({ arr }) => arr >= 50,
-    once: "arr_50",
   },
   {
     message: "You survived a quarter.",
@@ -286,7 +292,7 @@ export const MILESTONES: Milestone[] = [
   {
     message: "You're profitable.",
     subtext: "Revenue exceeds burn. For the first time, the clock stopped ticking.",
-    condition: ({ arr }) => arr >= 20,
+    condition: ({ arr }) => arr >= 8,
     once: "profitable",
   },
 ];

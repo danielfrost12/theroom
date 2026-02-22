@@ -85,6 +85,7 @@ export function Endgame({ ending, arr, dims, decisions, weekLog, pivotalMoments,
           mirror={mirror || "You played the only way you knew how."}
           dims={dims}
           archetype={archetype}
+          pivotalMoments={moments}
           onPlayAgain={onPlayAgain}
         />
 
