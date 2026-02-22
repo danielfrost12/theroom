@@ -105,6 +105,46 @@ export function detectArchetype(dims: GameDimensions, decisions: Decision[], wee
   return best;
 }
 
+// Mid-game mirror — the game calls you out on your pattern
+// Only surfaces in Act 2+, one per archetype detection cycle
+export function getArchetypeMirror(archetype: Archetype, week: number): string | null {
+  const act = getAct(week);
+  if (act === 1) return null; // Too early — you're still learning
+
+  switch (archetype) {
+    case 'The Visionary':
+      return act === 2
+        ? "You keep choosing the company. Every time. Have you noticed?"
+        : "The product is everything to you. The people are starting to feel it.";
+    case 'The Shepherd':
+      return act === 2
+        ? "You protect everyone but yourself. The numbers don't lie."
+        : "Everyone loves you. The board doesn't care about that.";
+    case 'The Survivor':
+      return act === 2
+        ? "You're still here. That's something. Is it enough?"
+        : "Surviving isn't winning. But you already knew that.";
+    case 'The Purist':
+      return act === 2
+        ? "You've never compromised. The company has paid for it every time."
+        : "Your integrity is intact. Your runway isn't.";
+    case 'The Operator':
+      return act === 2
+        ? "Balanced. Measured. Controlled. When was the last time you felt something?"
+        : "You've managed everything perfectly. Nobody can tell what you actually believe.";
+    case 'The Burnout':
+      return act === 2
+        ? "You keep giving. Your body is keeping score."
+        : "The company is alive because you're dying. Is that a trade-off or a confession?";
+    case 'The Maverick':
+      return act === 2
+        ? "You've zigged every time they expected a zag. The team is dizzy."
+        : "Bold moves. Wild swings. Nobody knows what you'll do next. Including you.";
+    default:
+      return null;
+  }
+}
+
 // Archetype-based tension bias — nudge tension selection toward the player's weakness
 export function getArchetypeBias(archetype: Archetype): Record<string, number> {
   // Returns category score bonuses for tension selection
@@ -501,17 +541,57 @@ export function getTension(week: number, usedIndices: Set<number>, dims?: GameDi
     // Fourth wall moments get a strong bonus when they're eligible — they should feel inevitable
     if (t.fourthWall && week >= 14 && week <= 17) score += 10;
 
-    // Variety: slight random factor so it's not 100% deterministic
-    score += Math.random() * 2;
+    // Variety: meaningful random factor so replays feel different
+    score += Math.random() * 5;
 
     return { tension: t, score };
   });
 
   scored.sort((a, b) => b.score - a.score);
 
-  // Pick from top 3 to maintain some unpredictability
-  const topN = scored.slice(0, Math.min(3, scored.length));
-  return topN[Math.floor(Math.random() * topN.length)].tension;
+  // Pick from top 5 to maintain real unpredictability across replays
+  const topN = scored.slice(0, Math.min(5, scored.length));
+  const picked = topN[Math.floor(Math.random() * topN.length)].tension;
+
+  // --- ANTI-MEMORIZATION ---
+  // 1. Randomly swap left/right so "the good answer" isn't always the same button
+  if (Math.random() > 0.5 && !picked.requires && picked.format !== 'forced') {
+    const swapped: IndexedTension = {
+      ...picked,
+      left: picked.right,
+      right: picked.left,
+      leftEffect: { ...picked.rightEffect },
+      rightEffect: { ...picked.leftEffect },
+      leftForeshadow: picked.rightForeshadow,
+      rightForeshadow: picked.leftForeshadow,
+    };
+    return applyStatePressure(swapped, dims);
+  }
+
+  return applyStatePressure(picked, dims);
+}
+
+// 2. State-dependent effect scaling — the same choice costs more when you're weak.
+// Choosing "ship it now" at 30 energy costs -15 energy instead of -8.
+// This means memorizing "which button to press" is useless — the math changes.
+function applyStatePressure(t: IndexedTension, dims: GameDimensions): IndexedTension {
+  const scale = (effect: number, dimValue: number): number => {
+    if (effect >= 0) return effect; // Only amplify costs, not gains
+    // When a dimension is below 35, negative effects are 30-60% worse
+    const vulnerability = dimValue < 35 ? 1.6 : dimValue < 50 ? 1.3 : 1.0;
+    return Math.round(effect * vulnerability);
+  };
+
+  const dimKeys: (keyof GameDimensions)[] = ['company', 'relationships', 'energy', 'integrity'];
+
+  const newLeft = { ...t.leftEffect };
+  const newRight = { ...t.rightEffect };
+  for (const k of dimKeys) {
+    newLeft[k] = scale(newLeft[k], dims[k]);
+    newRight[k] = scale(newRight[k], dims[k]);
+  }
+
+  return { ...t, leftEffect: newLeft, rightEffect: newRight };
 }
 
 export function checkEnding(state: { week: number; cash: number; arr: number; dims: GameDimensions }): Ending | null {
@@ -535,6 +615,45 @@ export function checkEnding(state: { week: number; cash: number; arr: number; di
     return { type: "time_up", label: "TIME'S UP", emoji: "⏰", line: `${TOTAL_WEEKS} weeks. Company valued at $${val}M. The story just... stopped.` };
   }
   return null;
+}
+
+// The last line — a closing shot that plays before the endgame card.
+// One sentence. The screen goes dark. This is what they remember.
+export function getEndingLastLine(ending: Ending, dims: GameDimensions): string {
+  switch (ending.type) {
+    case 'burnout':
+      return dims.relationships > 40
+        ? "Priya found you asleep at your desk. She didn't wake you."
+        : "The office was empty when your laptop finally died.";
+    case 'disgraced':
+      return dims.company > 30
+        ? "The product still worked. Nobody wanted to touch it."
+        : "The last article about you was four paragraphs. You only read the headline.";
+    case 'bankrupt':
+      return dims.energy > 30
+        ? "You had the energy to keep going. You didn't have the money."
+        : "The last email you sent was to your landlord.";
+    case 'board_removed':
+      return dims.integrity > 50
+        ? "You built something good. They just didn't want you in the room anymore."
+        : "David didn't call. His assistant did.";
+    case 'ipo':
+      return dims.energy > 50
+        ? "The bell rang. Everyone was crying. You couldn't feel anything yet."
+        : "The bell rang. You smiled for the camera. Nobody saw your hands shaking.";
+    case 'acquired':
+      return dims.relationships > 50
+        ? "The check cleared on a Tuesday. Priya brought champagne. Nobody opened it."
+        : "The check cleared. You sat in your car for twenty minutes before driving home.";
+    case 'forced_sale':
+      return "You signed the papers in a conference room that smelled like old coffee.";
+    case 'time_up':
+      return dims.energy > 40
+        ? "The year ended. You didn't notice until someone mentioned it."
+        : "The year ended. You thought you had more time. Everyone does.";
+    default:
+      return "The room went quiet. And then it was over.";
+  }
 }
 
 export function getValuation(ending: Ending, arr: number): number {
