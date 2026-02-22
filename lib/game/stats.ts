@@ -68,6 +68,44 @@ export function getRank(currentValuation: number): { rank: number; total: number
   return { rank, total: all.length };
 }
 
+// All possible archetypes — for collection tracking
+const ALL_ARCHETYPES = [
+  'The Visionary', 'The Shepherd', 'The Survivor', 'The Purist',
+  'The Operator', 'The Burnout', 'The Maverick',
+] as const;
+
+// All possible endings — for collection tracking
+const ALL_ENDINGS = [
+  'ipo', 'acquired', 'burnout', 'bankrupt', 'disgraced',
+  'board_removed', 'forced_sale', 'time_up',
+] as const;
+
+// What you've collected across all playthroughs
+export function getCollectionStats(): {
+  archetypesCollected: string[];
+  archetypesRemaining: string[];
+  endingsCollected: string[];
+  endingsRemaining: string[];
+  longestRun: number;
+  fastestExit: number | null; // weeks to IPO/acquired, null if never
+} {
+  const history = readHistory();
+  const archetypes = new Set(history.map(h => h.archetype).filter(Boolean));
+  const endings = new Set(history.map(h => h.ending));
+
+  const exits = history.filter(h => h.ending === 'ipo' || h.ending === 'acquired');
+  const fastestExit = exits.length > 0 ? Math.min(...exits.map(h => h.weeks)) : null;
+
+  return {
+    archetypesCollected: ALL_ARCHETYPES.filter(a => archetypes.has(a)),
+    archetypesRemaining: ALL_ARCHETYPES.filter(a => !archetypes.has(a)),
+    endingsCollected: ALL_ENDINGS.filter(e => endings.has(e)),
+    endingsRemaining: ALL_ENDINGS.filter(e => !endings.has(e)),
+    longestRun: history.length > 0 ? Math.max(...history.map(h => h.weeks)) : 0,
+    fastestExit,
+  };
+}
+
 // Stats for onboarding — returns real data for returning players, defaults for first-timers
 export function getPlayerStats(): {
   totalPlayers: string;

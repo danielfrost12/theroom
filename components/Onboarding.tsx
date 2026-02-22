@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FONTS } from '@/lib/game/constants';
-import { getPlayerStats } from '@/lib/game/stats';
+import { getPlayerStats, getCollectionStats } from '@/lib/game/stats';
 
 interface OnboardingProps {
   onStart: () => void;
@@ -11,6 +11,7 @@ interface OnboardingProps {
 export function Onboarding({ onStart }: OnboardingProps) {
   const [phase, setPhase] = useState(0);
   const stats = getPlayerStats();
+  const collection = stats.isReturning ? getCollectionStats() : null;
 
   useEffect(() => {
     const timers = [
@@ -126,25 +127,67 @@ export function Onboarding({ onStart }: OnboardingProps) {
           <div style={{
             display: "flex", gap: 16, flexWrap: "wrap",
           }}>
-            {stats.isReturning ? (
-              <>
-                {[
-                  { n: stats.totalPlayers, label: "" },
-                  { n: stats.avgWeeks, label: "" },
-                  { n: `$${stats.bestValuation}M`, label: "best" },
-                ].map((s, i) => (
-                  <div key={i}>
+            {stats.isReturning && collection ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {/* Personal best + runs */}
+                <div style={{ display: "flex", gap: 16 }}>
+                  <div>
                     <span style={{
                       fontFamily: FONTS.mono, fontSize: 14, fontWeight: 700, color: "#fff",
-                    }}>{s.n}</span>
-                    {s.label && (
-                      <span style={{
-                        fontSize: 11, color: "rgba(255,255,255,0.35)", marginLeft: 5,
-                      }}>{s.label}</span>
-                    )}
+                    }}>${stats.bestValuation}M</span>
+                    <span style={{
+                      fontSize: 11, color: "rgba(255,255,255,0.35)", marginLeft: 5,
+                    }}>best</span>
                   </div>
-                ))}
-              </>
+                  <div>
+                    <span style={{
+                      fontFamily: FONTS.mono, fontSize: 14, fontWeight: 700, color: "#fff",
+                    }}>{stats.totalPlayers}</span>
+                  </div>
+                </div>
+
+                {/* Collection — what you haven't done yet (the pull to come back) */}
+                {collection.archetypesRemaining.length > 0 && (
+                  <div>
+                    <div style={{
+                      fontSize: 10, fontFamily: FONTS.mono, color: "rgba(255,255,255,0.2)",
+                      letterSpacing: "1.5px", marginBottom: 6,
+                    }}>
+                      {collection.archetypesCollected.length} / 7 ARCHETYPES
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {collection.archetypesCollected.map(a => (
+                        <span key={a} style={{
+                          fontSize: 10, fontFamily: FONTS.mono,
+                          color: "rgba(255,238,210,0.5)",
+                          padding: "3px 8px",
+                          borderRadius: 4,
+                          background: "rgba(255,238,210,0.06)",
+                        }}>{a.replace('The ', '')}</span>
+                      ))}
+                      {collection.archetypesRemaining.slice(0, 3).map(a => (
+                        <span key={a} style={{
+                          fontSize: 10, fontFamily: FONTS.mono,
+                          color: "rgba(255,255,255,0.12)",
+                          padding: "3px 8px",
+                          borderRadius: 4,
+                          border: "1px dashed rgba(255,255,255,0.08)",
+                        }}>?</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Unfinished business — endings you haven't seen */}
+                {collection.endingsRemaining.length > 0 && collection.endingsRemaining.length <= 5 && (
+                  <div style={{
+                    fontSize: 11, fontFamily: FONTS.mono,
+                    color: "rgba(255,255,255,0.2)",
+                  }}>
+                    {collection.endingsCollected.length} / 8 endings discovered
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 {[
