@@ -2,11 +2,9 @@
 
 import { useState, useEffect, ReactNode } from 'react';
 import { useGameState } from '@/hooks/useGameState';
-import { Onboarding } from '@/components/Onboarding';
 import { CinematicOpening } from '@/components/CinematicOpening';
 import { Game } from '@/components/Game';
 import { Endgame } from '@/components/Endgame';
-import { LofiPlayer } from '@/components/LofiPlayer';
 import { TEMPO } from '@/lib/game/constants';
 
 function ScreenTransition({ children, screenKey }: { children: ReactNode; screenKey: string }) {
@@ -135,8 +133,6 @@ export default function Page() {
           />
         </ScreenTransition>
       )}
-
-      <LofiPlayer />
     </div>
   );
 }
