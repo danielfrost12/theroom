@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { FONTS, COLORS, TEMPO, getActTempo, shouldEarnSilence, getDashboardVisibility, weekDotColor } from '@/lib/game/constants';
 import { GameDimensions, Ending, Decision, IndexedTension, TensionFormat } from '@/lib/game/types';
-import { getSceneForState, getBreathingMoment, getCompressionLine, getAct, getTension, checkEnding, checkSurpriseEvent, checkMilestone, getTensionStakes, detectArchetype, getArchetypeBias, type SurpriseEvent, type Milestone, type TensionStakes } from '@/lib/game/engine';
+import { getSceneForState, getBreathingMoment, getCompressionLine, getAct, getTension, checkEnding, checkSurpriseEvent, checkMilestone, getTensionStakes, detectArchetype, getArchetypeBias, getArchetypeMirror, getEndingLastLine, type SurpriseEvent, type Milestone, type TensionStakes } from '@/lib/game/engine';
 import { generateNarrative } from '@/lib/ai/narrative';
 import { SceneBackground } from './SceneBackground';
 import { DimBar } from './DimBar';
@@ -53,6 +53,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const [archetypeBias, setArchetypeBias] = useState<Record<string, number>>({});
   const [earnedSilence, setEarnedSilence] = useState(false);
   const [isFourthWall, setIsFourthWall] = useState(false);
+  const [lastLine, setLastLine] = useState<string | null>(null);
+  const [archetypeMirror, setArchetypeMirror] = useState<string | null>(null);
   const pendingContinueRef = useRef<(() => void) | null>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const usedTensionsRef = useRef<Set<number>>(new Set());
@@ -69,6 +71,20 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const clearAllTimeouts = () => {
     timeoutsRef.current.forEach(clearTimeout);
     timeoutsRef.current = [];
+  };
+
+  // Show the ending last line, then transition to endgame
+  const triggerEnding = (ending: Ending, finalArr: number, finalDims: GameDimensions, finalDecisions: Decision[], finalWeekLog: string[], delay: number) => {
+    const line = getEndingLastLine(ending, finalDims);
+    setLastLine(line);
+    setNarrative(null);
+    setSurpriseEvent(null);
+    setMilestone(null);
+    setCompressing(false);
+    setShowBreathing(false);
+    addTimeout(() => {
+      onEnd(ending, finalArr, finalDims, finalDecisions, finalWeekLog, pivotalMoments);
+    }, delay + 3500); // Last line holds for 3.5 seconds, then endgame
   };
 
   // Get initial tension
@@ -163,6 +179,18 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       if (surprise.once) setUsedEvents(prev => new Set([...prev, surprise.once!]));
       setNarrative(null);
 
+      // Track human cost — when people leave, it's a pivotal moment
+      const humanCostMap: Record<string, string> = {
+        elena_quit: `Week ${w}: Elena resigned`,
+        marcus_leaves: `Week ${w}: Marcus left for the competitor`,
+        glassdoor: `Week ${w}: Someone wrote that Glassdoor review`,
+        client_churn: `Week ${w}: Your biggest client walked away`,
+        david_forward: `Week ${w}: David stopped trusting you`,
+      };
+      if (surprise.once && humanCostMap[surprise.once]) {
+        setPivotalMoments(prev => [...prev.slice(-(4 - 1)), humanCostMap[surprise.once!]]);
+      }
+
       addTimeout(() => {
         const sDims = { ...d };
         (Object.keys(surprise.effects) as (keyof GameDimensions)[]).forEach(k => {
@@ -182,7 +210,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
 
         const sEnding = checkEnding({ week: w + 1, cash: sCash, arr: sArr, dims: sDims });
         if (sEnding) {
-          addTimeout(() => onEnd(sEnding, sArr, sDims, decs, sWeekLog, pivotalMoments), TEMPO.endingDelay / 2);
+          triggerEnding(sEnding, sArr, sDims, decs, sWeekLog, TEMPO.endingDelay / 2);
           return;
         }
 
@@ -199,11 +227,15 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   };
 
   const loadNextTension = (w: number, d: GameDimensions, c: number, decs: Decision[]) => {
-    // Every 10 weeks, re-detect archetype and update tension bias
+    // Every 10 weeks, re-detect archetype and update tension bias + mirror
     if (w % 10 === 0 && w > 0) {
       const arch = detectArchetype(d, decs, w);
       const bias = getArchetypeBias(arch);
       setArchetypeBias(bias);
+      const mirror = getArchetypeMirror(arch, w);
+      setArchetypeMirror(mirror);
+    } else {
+      setArchetypeMirror(null);
     }
 
     const t = getTension(w, usedTensionsRef.current, d, c, decs.map(dd => dd.choice), archetypeBias);
@@ -344,10 +376,11 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       }
     });
     if (isConsequence && tension) {
-      setPivotalMoments(prev => {
-        const moment = `Week ${week}: Your past caught up`;
-        return [...prev.slice(-(4 - 1)), moment];
-      });
+      // Use the callback line for specificity — "You let Marcus go" is better than "Your past caught up"
+      const consequenceMoment = tension.callbackLine
+        ? `Week ${week}: ${tension.callbackLine.split('.')[0]}`
+        : `Week ${week}: Your past caught up`;
+      setPivotalMoments(prev => [...prev.slice(-(4 - 1)), consequenceMoment]);
     }
 
     const decision: Decision = { week, context: tension?.context || "Custom move", choice, dims: { ...newDims } };
@@ -384,7 +417,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     // Check ending
     const ending = checkEnding({ week: newWeek, cash: newCash, arr: newArr, dims: newDims });
     if (ending) {
-      addTimeout(() => onEnd(ending, newArr, newDims, newDecisions, newWeekLog, pivotalMoments), TEMPO.endingDelay);
+      triggerEnding(ending, newArr, newDims, newDecisions, newWeekLog, TEMPO.endingDelay);
       return;
     }
 
@@ -428,7 +461,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
 
             const compressEnding = checkEnding({ week: compressedWeek, cash: compressedCash, arr: compressedArr, dims: driftDims });
             if (compressEnding) {
-              addTimeout(() => onEnd(compressEnding, compressedArr, driftDims, newDecisions, compressedWeekLog, pivotalMoments), actTempo.narrativeTapDelay);
+              triggerEnding(compressEnding, compressedArr, driftDims, newDecisions, compressedWeekLog, actTempo.narrativeTapDelay);
               return;
             }
 
@@ -663,6 +696,29 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           );
         })()}
 
+        {/* Ending last line — the closing shot before the endgame card */}
+        {lastLine && (
+          <div style={{
+            flex: 1, display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            minHeight: "60dvh",
+            padding: "0 32px",
+            animation: "fadeUp 1.5s ease",
+          }}>
+            <div style={{
+              fontFamily: FONTS.display,
+              fontSize: "clamp(17px, 4vw, 22px)",
+              color: "rgba(255,238,220,0.6)",
+              fontStyle: "italic",
+              lineHeight: 1.7,
+              textAlign: "center",
+              maxWidth: 360,
+            }}>
+              {lastLine}
+            </div>
+          </div>
+        )}
+
         {/* Breathing moment / Earned silence */}
         {showBreathing && (
           earnedSilence ? (
@@ -839,6 +895,23 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             flex: 1, display: "flex", flexDirection: "column", justifyContent: "center",
             animation: "fadeUp 0.5s ease",
           }}>
+
+            {/* Archetype mirror — the game sees your pattern */}
+            {archetypeMirror && (
+              <div style={{
+                textAlign: "center", marginBottom: 24,
+                opacity: 0, animation: "fadeUp 1.2s ease 0.3s forwards",
+              }}>
+                <div style={{
+                  fontSize: 12, color: "rgba(255,238,210,0.35)",
+                  fontFamily: FONTS.mono,
+                  lineHeight: 1.7, maxWidth: 340, margin: "0 auto",
+                  letterSpacing: "0.3px",
+                }}>
+                  {archetypeMirror}
+                </div>
+              </div>
+            )}
 
             {/* Interiority — inner voice, before the context */}
             {tension.interiority && (
@@ -1121,34 +1194,55 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             {/* Choices — delayed reveal forces reading the context first */}
             {choicesVisible && tensionFormat !== 'forced' && (
               <div style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
+                display: "flex", alignItems: "stretch", justifyContent: "center",
                 gap: 0, marginBottom: 20,
                 animation: "fadeUp 0.4s ease",
               }}>
                 {[
                   { label: tension.left, effects: tension.leftEffect },
                   { label: tension.right, effects: tension.rightEffect },
-                ].map((opt, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleChoice(opt.label, opt.effects)}
-                    style={{
-                      background: "transparent", border: "none",
-                      color: COLORS.warm,
-                      padding: "20px 28px",
-                      fontSize: stakes === 'critical' ? 16 : 15,
-                      fontWeight: 500, letterSpacing: "0.5px",
-                      cursor: "pointer", fontFamily: FONTS.body,
-                      transition: "all 0.3s ease", lineHeight: 1.3,
-                      position: "relative",
-                      borderLeft: i === 1 ? "1px solid rgba(255,238,210,0.1)" : "none",
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.color = COLORS.warmHover; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = COLORS.warm; }}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                ].map((opt, i) => {
+                  // Show which dimensions this choice costs — names only, not numbers
+                  const costLabels: Record<string, string> = { company: 'company', relationships: 'people', energy: 'energy', integrity: 'ethics' };
+                  const costs = (Object.keys(costLabels) as (keyof typeof costLabels)[])
+                    .filter(k => (opt.effects[k as keyof GameDimensions] || 0) <= -8)
+                    .map(k => costLabels[k]);
+
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handleChoice(opt.label, opt.effects)}
+                      style={{
+                        background: "transparent", border: "none",
+                        color: COLORS.warm,
+                        padding: "18px 24px 14px",
+                        cursor: "pointer", fontFamily: FONTS.body,
+                        transition: "all 0.3s ease",
+                        position: "relative",
+                        borderLeft: i === 1 ? "1px solid rgba(255,238,210,0.1)" : "none",
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.color = COLORS.warmHover; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = COLORS.warm; }}
+                    >
+                      <span style={{
+                        fontSize: stakes === 'critical' ? 16 : 15,
+                        fontWeight: 500, letterSpacing: "0.5px", lineHeight: 1.3,
+                      }}>
+                        {opt.label}
+                      </span>
+                      {costs.length > 0 && (
+                        <span style={{
+                          fontSize: 10, fontFamily: FONTS.mono,
+                          color: "rgba(255,255,255,0.18)",
+                          letterSpacing: "0.5px",
+                        }}>
+                          costs {costs.join(', ')}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
