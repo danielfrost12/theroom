@@ -97,7 +97,34 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
 
   const isDesperate = dims.company < 35 || dims.energy < 30 || dims.relationships < 30 || cash < 400;
 
+  const [choicesVisible, setChoicesVisible] = useState(false);
+
   const tensionFormat: TensionFormat = tension?.format || 'standard';
+
+  // Stakes whisper — what's at risk, computed from current dims + tension effects
+  const stakesWhisper = useMemo(() => {
+    if (!tension) return null;
+    const dimLabels: Record<string, string> = { company: 'Company', relationships: 'People', energy: 'Energy', integrity: 'Ethics' };
+    const dimKeys = ['company', 'relationships', 'energy', 'integrity'] as const;
+
+    // Find the weakest dimension that could get hit by either choice
+    let worstDim: string | null = null;
+    let worstVal = 100;
+    for (const k of dimKeys) {
+      const val = dims[k];
+      const leftHit = tension.leftEffect[k] || 0;
+      const rightHit = tension.rightEffect[k] || 0;
+      // If BOTH choices hurt this dim, or if it's already low and one choice hurts it
+      const bothHurt = leftHit < 0 && rightHit < 0;
+      const lowAndVulnerable = val < 40 && (leftHit < -8 || rightHit < -8);
+      if ((bothHurt || lowAndVulnerable) && val < worstVal) {
+        worstVal = val;
+        worstDim = k;
+      }
+    }
+    if (!worstDim || worstVal > 55) return null; // Only whisper when something is actually at risk
+    return `${dimLabels[worstDim]} is at ${worstVal}.`;
+  }, [tension, dims]);
 
   const interpolateContext = (text: string): string => {
     const runwayMonths = Math.max(1, Math.round(cash / 150));
@@ -188,6 +215,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     setShowCustom(false);
     setCustomText("");
     setIsFourthWall(!!t.fourthWall);
+    setChoicesVisible(false);
   };
 
   // --- HANDLE CHOICE ---
@@ -294,6 +322,13 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
 
     // Track pivotal moments — dimension crises, consequences, milestones
     const dimNames: Record<string, string> = { company: "Company", relationships: "Relationships", energy: "Energy", integrity: "Integrity" };
+    const atmosphereLines: Record<string, string> = {
+      company: "The room feels emptier now.",
+      relationships: "The silence between people grows louder.",
+      energy: "Everything takes longer than it used to.",
+      integrity: "You avoid mirrors.",
+    };
+    let crisisHappened = false;
     (Object.keys(newDims) as (keyof GameDimensions)[]).forEach(k => {
       if (newDims[k] < 30 && dims[k] >= 30 && !dimCrisisTracked.has(k)) {
         setDimCrisisTracked(prev => new Set([...prev, k]));
@@ -301,6 +336,11 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           const moment = `Week ${week}: ${dimNames[k]} hit rock bottom`;
           return [...prev.slice(-(4 - 1)), moment]; // Keep max 5
         });
+        // Atmosphere shift — teach the player that the world responds
+        if (!crisisHappened) {
+          setForeshadow(atmosphereLines[k] || "Something shifted.");
+          crisisHappened = true;
+        }
       }
     });
     if (isConsequence && tension) {
@@ -421,6 +461,19 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
 
   // Is the tension screen active (not loading, no narrative, no overlay)?
   const showTension = !!tension && !loading && !narrative && !compressing && !surpriseEvent && !milestone && !showBreathing;
+
+  // Delay choices so the player must read the context before acting.
+  // Stakes-based: higher stakes = longer reading pause.
+  useEffect(() => {
+    if (showTension && !choicesVisible) {
+      const delay = stakes === 'critical' ? TEMPO.choiceRevealCrit
+        : stakes === 'high' ? TEMPO.choiceRevealHigh
+        : TEMPO.choiceReveal;
+      const id = addTimeout(() => setChoicesVisible(true), delay);
+      return () => clearTimeout(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showTension, choicesVisible, stakes]);
 
   return (
     <SceneBackground sceneKey={sceneKey} mood={liveMood}>
@@ -1049,8 +1102,24 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
               </div>
             )}
 
-            {/* Choices — always visible immediately for non-forced */}
-            {tensionFormat !== 'forced' && (
+            {/* Stakes whisper — what you stand to lose */}
+            {stakesWhisper && choicesVisible && (
+              <div style={{
+                textAlign: "center", marginBottom: 12,
+                opacity: 0, animation: "fadeUp 0.5s ease 0.1s forwards",
+              }}>
+                <span style={{
+                  fontSize: 11, fontFamily: FONTS.mono,
+                  color: "rgba(248,113,113,0.5)",
+                  letterSpacing: "0.5px",
+                }}>
+                  {stakesWhisper}
+                </span>
+              </div>
+            )}
+
+            {/* Choices — delayed reveal forces reading the context first */}
+            {choicesVisible && tensionFormat !== 'forced' && (
               <div style={{
                 display: "flex", alignItems: "center", justifyContent: "center",
                 gap: 0, marginBottom: 20,
@@ -1084,7 +1153,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             )}
 
             {/* Forced choice — single button, player taps it */}
-            {tensionFormat === 'forced' && (
+            {choicesVisible && tensionFormat === 'forced' && (
               <div style={{
                 textAlign: "center", marginBottom: 20,
                 animation: "fadeUp 0.4s ease",
@@ -1112,7 +1181,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             )}
 
             {/* Custom input — unlocks when desperate */}
-            {isDesperate && !showCustom && tensionFormat !== 'forced' && (
+            {choicesVisible && isDesperate && !showCustom && tensionFormat !== 'forced' && (
               <button
                 onClick={() => setShowCustom(true)}
                 style={{

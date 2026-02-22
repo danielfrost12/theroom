@@ -64,10 +64,10 @@ export function ShareImage({
   }, [companyName, generating]);
 
   const handleShare = useCallback(async () => {
-    if (!cardRef.current) return;
+    if (!cardRef.current || generating) return;
     setGenerating(true);
 
-    const shareData: ShareData = {
+    const shareInfo: ShareData = {
       companyName,
       endingType: ending.type,
       endingEmoji: ending.emoji,
@@ -79,7 +79,7 @@ export function ShareImage({
       headline,
       rank: 0, // legacy field — kept for share URL compatibility
     };
-    const shareUrl = buildShareUrl(shareData);
+    const shareUrl = buildShareUrl(shareInfo);
 
     try {
       const html2canvas = (await import('html2canvas-pro')).default;
@@ -90,45 +90,49 @@ export function ShareImage({
         logging: false,
       });
 
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        const file = new File([blob], 'theroom.png', { type: 'image/png' });
+      // Convert to blob with a promise wrapper so we can properly await + catch
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((b) => resolve(b), 'image/png');
+      });
 
-        if (navigator.share) {
-          // Share URL + text as primary, image as attachment if supported
-          const sharePayload: ShareData2 = {
-            title: `${companyName} — ${ending.label}`,
-            text: `I built ${companyName}. ${ending.line}\nCan you do better?`,
-            url: shareUrl,
-          };
-          // Try with image first, fall back to URL-only
+      if (!blob) {
+        setGenerating(false);
+        return;
+      }
+
+      const file = new File([blob], 'theroom.png', { type: 'image/png' });
+
+      if (navigator.share) {
+        const sharePayload: ShareData2 = {
+          title: `${companyName} — ${ending.label}`,
+          text: `I built ${companyName}. ${ending.line}\nCan you do better?`,
+          url: shareUrl,
+        };
+        try {
           if (navigator.canShare?.({ files: [file] })) {
-            try {
-              await navigator.share({ ...sharePayload, files: [file] });
-            } catch {
-              // Some platforms fail with files — retry without
-              await navigator.share(sharePayload);
-            }
+            await navigator.share({ ...sharePayload, files: [file] });
           } else {
             await navigator.share(sharePayload);
           }
-        } else {
-          // Desktop fallback: copy share URL to clipboard, download image
-          try {
-            await navigator.clipboard.writeText(`I built ${companyName}. ${ending.line}\nCan you do better?\n${shareUrl}`);
-          } catch { /* clipboard may not be available */ }
-          const link = document.createElement('a');
-          link.download = `theroom-${companyName.toLowerCase().replace(/\s+/g, '-')}.png`;
-          link.href = canvas.toDataURL('image/png');
-          link.click();
+        } catch {
+          // User cancelled share sheet or share failed — this is fine
         }
-        setGenerating(false);
-      }, 'image/png');
+      } else {
+        // Desktop fallback: copy share URL to clipboard, download image
+        try {
+          await navigator.clipboard.writeText(`I built ${companyName}. ${ending.line}\nCan you do better?\n${shareUrl}`);
+        } catch { /* clipboard may not be available */ }
+        const link = document.createElement('a');
+        link.download = `theroom-${companyName.toLowerCase().replace(/\s+/g, '-')}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }
     } catch (err) {
       console.error('Share failed:', err);
+    } finally {
       setGenerating(false);
     }
-  }, [companyName, ending, valuation, weekLog, dims, headline]);
+  }, [companyName, ending, valuation, weekLog, dims, headline, generating]);
 
   return (
     <>
