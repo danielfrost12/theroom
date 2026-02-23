@@ -188,7 +188,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       addTimeout(() => {
         setPeakMoment(null);
         loadNextTension(w, d, c, decs);
-      }, 4500); // Holds for 4.5 seconds — long enough to feel it
+      }, 6000); // Holds for 6 seconds — Socrates: let the question breathe
       return;
     }
 
@@ -334,7 +334,27 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           if (val > bestGain) { bestGain = val; bestDim = k; }
         }
         if (bestGain >= 5 && bestDim) {
-          setRegretHint(`"${unchosenLabel}" would have given +${bestGain} ${dimLabelsRegret[bestDim]}.`);
+          // Jobs: no numbers. The regret should feel like a whisper, not a tooltip.
+          const regretPhrases: Record<string, string[]> = {
+            Company: [
+              `"${unchosenLabel}" would have saved the product.`,
+              `The product needed "${unchosenLabel}."`,
+            ],
+            People: [
+              `"${unchosenLabel}" would have kept someone.`,
+              `Someone needed you to choose "${unchosenLabel}."`,
+            ],
+            Energy: [
+              `"${unchosenLabel}" would have given you rest.`,
+              `Your body wanted "${unchosenLabel}."`,
+            ],
+            Ethics: [
+              `"${unchosenLabel}" would have been the right thing.`,
+              `You\u2019ll think about "${unchosenLabel}" later.`,
+            ],
+          };
+          const phrases = regretPhrases[dimLabelsRegret[bestDim]] || [`"${unchosenLabel}" mattered.`];
+          setRegretHint(phrases[Math.floor(Math.random() * phrases.length)]);
         } else {
           setRegretHint(null);
         }
@@ -465,14 +485,14 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     const newDecisions = [...decisions, decision];
     setDecisions(newDecisions);
 
-    // Log week color
-    const avg = (newDims.company + newDims.relationships + newDims.energy + newDims.integrity) / 4;
+    // Log week color — based on net impact of this choice, not absolute state
+    const delta = (newDims.company - dims.company) + (newDims.relationships - dims.relationships) + (newDims.energy - dims.energy) + (newDims.integrity - dims.integrity);
     let weekColor: string;
-    if (avg > 65) weekColor = "🟩";
-    else if (avg > 45) weekColor = "🟨";
-    else weekColor = "🟥";
-    if (newDims.relationships < 25 && dims.relationships >= 25) weekColor = "💀";
-    if (newArr > arr + 15) weekColor = "🏆";
+    if (delta >= 10) weekColor = "🟩";       // Great week — net positive
+    else if (delta >= 0) weekColor = "🟨";    // Neutral/slight gain
+    else if (delta >= -10) weekColor = "🟥";  // Tough week — net negative
+    else weekColor = "💀";                    // Brutal week — big losses
+    if (newArr > arr + 15) weekColor = "🏆"; // Revenue milestone overrides
     const newWeekLog = [...weekLog, weekColor];
     setWeekLog(newWeekLog);
 
@@ -965,8 +985,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                 </div>
               </div>
             )}
-            {/* Regret loop — the path not taken. One quiet line. */}
-            {regretHint && (
+            {/* Regret loop — the path not taken. One quiet line. Virgil: only when foreshadow is silent. */}
+            {regretHint && !foreshadow && (
               <div style={{
                 marginTop: foreshadow ? 8 : 16,
                 paddingTop: foreshadow ? 0 : 12,

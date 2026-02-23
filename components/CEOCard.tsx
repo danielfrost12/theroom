@@ -339,6 +339,43 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
             </div>
           </div>
 
+          {/* Collection progress — Zeigarnik: show what's left to unlock */}
+          {(() => {
+            const stats = getCollectionStats();
+            const totalArchetypes = stats.archetypesCollected.length + stats.archetypesRemaining.length;
+            const totalEndings = stats.endingsCollected.length + stats.endingsRemaining.length;
+            // Only show after first run — no spoilers on virgin play
+            if (playCount <= 1) return null;
+            return (
+              <div style={{
+                borderTop: "1px solid rgba(255,255,255,0.04)",
+                paddingTop: 12,
+                marginBottom: 12,
+              }}>
+                <div style={{
+                  display: "flex", justifyContent: "center", gap: 20,
+                }}>
+                  <div style={{
+                    fontSize: 9,
+                    color: "rgba(255,255,255,0.25)",
+                    fontFamily: FONTS.mono,
+                    letterSpacing: "1px",
+                  }}>
+                    {stats.archetypesCollected.length}/{totalArchetypes} archetypes
+                  </div>
+                  <div style={{
+                    fontSize: 9,
+                    color: "rgba(255,255,255,0.25)",
+                    fontFamily: FONTS.mono,
+                    letterSpacing: "1px",
+                  }}>
+                    {stats.endingsCollected.length}/{totalEndings} endings
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Footer */}
           <div style={{
             display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -363,7 +400,7 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
         </div>
       </div>
 
-      {/* Mirror — below the card, personal reflection */}
+      {/* Mirror — below the card, personal reflection. Nothing between this and the dare. */}
       <div style={{
         textAlign: "center" as const,
         marginTop: 28,
@@ -379,60 +416,6 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
           {mirror}
         </div>
       </div>
-
-      {/* Collection progress — Zeigarnik effect: unfinished business drives replay */}
-      {(() => {
-        const collection = getCollectionStats();
-        const hasProgress = collection.archetypesCollected.length > 0 || collection.endingsCollected.length > 0;
-        if (!hasProgress) return null;
-        return (
-          <div style={{
-            borderTop: "1px solid rgba(255,255,255,0.04)",
-            paddingTop: 16,
-            marginTop: 4,
-          }}>
-            {/* Archetypes */}
-            {collection.archetypesRemaining.length > 0 && (
-              <div style={{ marginBottom: 10 }}>
-                <div style={{
-                  fontSize: 9, fontFamily: FONTS.mono, color: "rgba(255,255,255,0.18)",
-                  letterSpacing: "1.5px", marginBottom: 6, textAlign: "center" as const,
-                }}>
-                  {collection.archetypesCollected.length} / 7 ARCHETYPES
-                </div>
-                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" as const, justifyContent: "center" }}>
-                  {collection.archetypesCollected.map(a => (
-                    <span key={a} style={{
-                      fontSize: 9, fontFamily: FONTS.mono,
-                      color: "rgba(255,238,210,0.45)",
-                      padding: "2px 7px", borderRadius: 3,
-                      background: "rgba(255,238,210,0.06)",
-                    }}>{a.replace('The ', '')}</span>
-                  ))}
-                  {collection.archetypesRemaining.slice(0, 3).map((_, i) => (
-                    <span key={`u-${i}`} style={{
-                      fontSize: 9, fontFamily: FONTS.mono,
-                      color: "rgba(255,255,255,0.1)",
-                      padding: "2px 7px", borderRadius: 3,
-                      border: "1px dashed rgba(255,255,255,0.06)",
-                    }}>?</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {/* Endings */}
-            {collection.endingsRemaining.length > 0 && (
-              <div style={{
-                fontSize: 10, fontFamily: FONTS.mono,
-                color: "rgba(255,255,255,0.15)",
-                textAlign: "center" as const,
-              }}>
-                {collection.endingsCollected.length} / 8 endings discovered
-              </div>
-            )}
-          </div>
-        );
-      })()}
 
       {/* Share + Play Again actions */}
       <div style={{ marginTop: 32 }}>
