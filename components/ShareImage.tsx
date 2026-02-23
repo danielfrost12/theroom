@@ -361,21 +361,25 @@ export function ShareImage({
             {(() => {
               // Merge pivotal moments with custom typed choices (contextualized)
               const storyItems: { week: number; text: string }[] = [];
+              const usedWeeks = new Set<string>();
               pivotalMoments.forEach(m => {
                 const weekMatch = m.match(/^Week (\d+):/);
-                storyItems.push({ week: weekMatch ? parseInt(weekMatch[1]) : 0, text: m });
+                const wk = weekMatch ? parseInt(weekMatch[1]) : 0;
+                const key = `${wk}-${m.slice(0, 20)}`;
+                if (!usedWeeks.has(key)) {
+                  usedWeeks.add(key);
+                  storyItems.push({ week: wk, text: m });
+                }
               });
               if (decisions) {
                 decisions.filter(d => d.isCustom).forEach(d => {
-                  const briefContext = d.context.split('.')[0] || "A critical moment";
-                  const choiceText = d.choice.length > 30 ? d.choice.slice(0, 27) + '...' : d.choice;
-                  const alreadyTracked = storyItems.some(s => s.week === d.week && s.text.includes(choiceText.slice(0, 15)));
+                  const alreadyTracked = storyItems.some(s => s.week === d.week && (s.text.includes(d.choice.slice(0, 15)) || s.text.includes('"')));
                   if (!alreadyTracked) {
-                    storyItems.push({ week: d.week, text: `Week ${d.week}: ${choiceText} — ${briefContext.toLowerCase()}` });
+                    const trimmed = d.choice.length > 40 ? d.choice.slice(0, d.choice.lastIndexOf(' ', 37) || 37).trim() + '...' : d.choice;
+                    storyItems.push({ week: d.week, text: `Week ${d.week}: "${trimmed}"` });
                   }
                 });
               }
-              // Sort chronologically, take up to 4
               storyItems.sort((a, b) => a.week - b.week);
               const items = storyItems.slice(0, 4);
               if (items.length === 0) return null;

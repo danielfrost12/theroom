@@ -7,6 +7,17 @@ import { CinematicOpening } from '@/components/CinematicOpening';
 import { Game } from '@/components/Game';
 import { Endgame } from '@/components/Endgame';
 import { TEMPO } from '@/lib/game/constants';
+import { getPlayCount } from '@/lib/game/stats';
+
+// Random company name generator for replays — single evocative words
+const REPLAY_NAMES = [
+  "Parallax", "Meridian", "Vesper", "Kindling", "Threshold",
+  "Helix", "Canopy", "Forge", "Lattice", "Waypoint",
+  "Ember", "Atlas", "Nimbus", "Prism", "Vertex",
+  "Tidal", "Onyx", "Crucible", "Solace", "Cadence",
+  "Aperture", "Basalt", "Cipher", "Drift", "Epoch",
+  "Fulcrum", "Grain", "Harbor", "Index", "Junction",
+];
 
 function ScreenTransition({ children, screenKey }: { children: ReactNode; screenKey: string }) {
   const [visible, setVisible] = useState(false);
@@ -107,9 +118,20 @@ export default function Page() {
       {activeScreen === 'onboarding' && (
         <ScreenTransition screenKey="onboarding">
           <Onboarding onStart={() => {
-            transitionTo(() => {
-              setScreen('cinema');
-            });
+            // Returning players skip the cinematic — straight to Week 1
+            if (getPlayCount() > 0) {
+              transitionTo(() => {
+                const name = REPLAY_NAMES[Math.floor(Math.random() * REPLAY_NAMES.length)];
+                const choice = Math.random() < 0.5 ? 'Trust Marcus' : 'Trust yourself';
+                setCompanyName(name);
+                setFirstChoice(choice);
+                setScreen('game');
+              });
+            } else {
+              transitionTo(() => {
+                setScreen('cinema');
+              });
+            }
           }} />
         </ScreenTransition>
       )}

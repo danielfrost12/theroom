@@ -209,7 +209,8 @@ export function Endgame({ ending, arr, dims, decisions, weekLog, pivotalMoments,
   }
 
   // Phase 2: The full endgame — card, story, haunting question
-  const moments = pivotalMoments || [];
+  // Deduplicate pivotal moments — multiple code paths can add entries for the same week
+  const moments = (pivotalMoments || []).filter((m, i, arr) => arr.indexOf(m) === i);
 
   return (
     <SceneBackground sceneKey={ending.type === "ipo" || ending.type === "acquired" ? "rooftop" : "apartment_night"}>

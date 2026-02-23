@@ -282,6 +282,21 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     setCustomText("");
     setIsFourthWall(!!t.fourthWall);
     setChoicesVisible(false);
+
+    // When a consequence tension appears, check if its context/callbackLine implies a character has already left
+    // e.g. "Elena stopped showing up" / "Elena didn't come back" — she's gone before the player even chooses
+    if (t.requires) {
+      const tContext = (t.context + ' ' + (t.callbackLine || '')).toLowerCase();
+      const gonePattern = /\b(stopped showing up|didn't come back|left|quit|resigned|gone|walked out|not coming back|packed .* desk|submitted .* notice)\b/;
+      if (gonePattern.test(tContext)) {
+        if (/elena/i.test(tContext) && !usedEvents.has('elena_quit')) {
+          setUsedEvents(prev => new Set([...prev, 'elena_quit']));
+        }
+        if (/marcus/i.test(tContext) && !usedEvents.has('marcus_leaves')) {
+          setUsedEvents(prev => new Set([...prev, 'marcus_leaves']));
+        }
+      }
+    }
   };
 
   // --- HANDLE CHOICE ---
@@ -402,7 +417,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     setArr(newArr);
     setCash(newCash);
 
-    // Track pivotal moments — dimension crises, consequences, milestones
+    // Track ONE pivotal moment per week — priority: consequence > crisis > high-impact choice
+    // Only the most significant thing gets recorded to keep the story clean
     const dimNames: Record<string, string> = { company: "Company", relationships: "Relationships", energy: "Energy", integrity: "Integrity" };
     const atmosphereLines: Record<string, string> = {
       company: "The room feels emptier now.",
@@ -410,27 +426,26 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       energy: "Everything takes longer than it used to.",
       integrity: "You avoid mirrors.",
     };
+    let weekMoment: string | null = null;
+
+    // Check dimension crises
     let crisisHappened = false;
     (Object.keys(newDims) as (keyof GameDimensions)[]).forEach(k => {
       if (newDims[k] < 30 && dims[k] >= 30 && !dimCrisisTracked.has(k)) {
         setDimCrisisTracked(prev => new Set([...prev, k]));
-        setPivotalMoments(prev => {
-          const moment = `Week ${week}: ${dimNames[k]} hit rock bottom`;
-          return [...prev.slice(-(4 - 1)), moment]; // Keep max 5
-        });
-        // Atmosphere shift — teach the player that the world responds
+        if (!weekMoment) weekMoment = `Week ${week}: ${dimNames[k]} hit rock bottom`;
         if (!crisisHappened) {
           setForeshadow(atmosphereLines[k] || "Something shifted.");
           crisisHappened = true;
         }
       }
     });
+
+    // Consequences override crises — they're more narratively specific
     if (isConsequence && tension) {
-      // Use the callback line for specificity — "You let Marcus go" is better than "Your past caught up"
-      const consequenceMoment = tension.callbackLine
+      weekMoment = tension.callbackLine
         ? `Week ${week}: ${tension.callbackLine.split('.')[0]}`
         : `Week ${week}: Your past caught up`;
-      setPivotalMoments(prev => [...prev.slice(-(4 - 1)), consequenceMoment]);
     }
 
     const decision: Decision = { week, context: tension?.context || "Custom move", choice, dims: { ...newDims }, isCustom: isCustom || showAsCustom };
@@ -448,14 +463,12 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     const newWeekLog = [...weekLog, weekColor];
     setWeekLog(newWeekLog);
 
-    // Track high-impact choices as pivotal moments for the scorecard
-    if (Math.abs(delta) >= 10) {
+    // High-impact choices become moments only if no crisis/consequence already claimed this week
+    if (!weekMoment && Math.abs(delta) >= 10) {
       if (isCustom || showAsCustom) {
-        // Custom choices: contextualize the raw text with the situation
-        const briefContext = (tension?.context || "").split('.')[0] || "A critical moment";
-        setPivotalMoments(prev => [...prev.slice(-4), `Week ${week}: ${choice.length > 30 ? choice.slice(0, 27) + '...' : choice} — ${briefContext.toLowerCase()}`]);
+        const trimmed = choice.length > 40 ? choice.slice(0, choice.lastIndexOf(' ', 37) || 37).trim() + '...' : choice;
+        weekMoment = `Week ${week}: "${trimmed}"`;
       } else if (tension) {
-        // Preset choices: describe the tradeoff they made
         const dimLabelsP: Record<string, string> = { company: 'the product', relationships: 'people', energy: 'energy', integrity: 'ethics' };
         const dimKeysP: (keyof GameDimensions)[] = ['company', 'relationships', 'energy', 'integrity'];
         let biggest: keyof GameDimensions = 'company';
@@ -465,31 +478,51 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           if (v > biggestVal) { biggestVal = v; biggest = k; }
         }
         const dir = (newDims[biggest] - dims[biggest]) > 0 ? 'Chose' : 'Sacrificed';
-        setPivotalMoments(prev => [...prev.slice(-4), `Week ${week}: ${dir} ${dimLabelsP[biggest]}`]);
+        weekMoment = `Week ${week}: ${dir} ${dimLabelsP[biggest]}`;
       }
     }
 
-    // Detect character departures from choices (preset "Let him go" OR custom "Fire him", "Fire Marcus", etc.)
+    // Add the single moment for this week
+    if (weekMoment) {
+      setPivotalMoments(prev => [...prev.slice(-4), weekMoment!]);
+    }
+
+    // Detect character departures from choices — covers preset choices, custom typed choices, and consequences
     const choiceLower = choice.toLowerCase();
     const contextLower = (tension?.context || customText).toLowerCase();
-    const mentionsMarcus = contextLower.includes('marcus') || choiceLower.includes('marcus');
-    const mentionsElena = contextLower.includes('elena') || choiceLower.includes('elena');
-    const firingIntent = /\b(fire|fired|let .* go|terminate|get rid of|remove|kick out|sack)\b/i.test(choiceLower);
-    if (firingIntent && mentionsMarcus && !usedEvents.has('marcus_leaves')) {
+    const callbackLower = (tension?.callbackLine || '').toLowerCase();
+    const mentionsMarcus = contextLower.includes('marcus') || choiceLower.includes('marcus') || callbackLower.includes('marcus');
+    const mentionsElena = contextLower.includes('elena') || choiceLower.includes('elena') || callbackLower.includes('elena');
+    // Departure signals: firing, letting go, walking away, replacement, quitting
+    const departureIntent = /\b(fire|fired|let .* go|let .* walk|terminate|get rid of|remove|kick out|sack|find a replacement|replacement|walk away|walked)\b/i.test(choiceLower);
+    // Callback lines that signal departure (consequence tensions)
+    const callbackDeparture = /\b(didn't come back|left|quit|resigned|gone|walked out|not coming back)\b/i.test(callbackLower);
+
+    let marcusDeparted = usedEvents.has('marcus_leaves');
+    let elenaDeparted = usedEvents.has('elena_quit');
+
+    if (!marcusDeparted && mentionsMarcus && (departureIntent || callbackDeparture)) {
       setUsedEvents(prev => new Set([...prev, 'marcus_leaves']));
+      marcusDeparted = true;
     }
-    if (firingIntent && mentionsElena && !usedEvents.has('elena_quit')) {
+    if (!elenaDeparted && mentionsElena && (departureIntent || callbackDeparture)) {
       setUsedEvents(prev => new Set([...prev, 'elena_quit']));
+      elenaDeparted = true;
     }
-    // Also mark "Let him go" preset choice as Marcus departure (context always mentions Marcus)
-    if (choice === 'Let him go' && mentionsMarcus && !usedEvents.has('marcus_leaves')) {
+    // Known preset choices that cause departures
+    if (choice === 'Let him go' && mentionsMarcus && !marcusDeparted) {
       setUsedEvents(prev => new Set([...prev, 'marcus_leaves']));
+      marcusDeparted = true;
+    }
+    if (choice === 'Let her walk' && mentionsElena && !elenaDeparted) {
+      setUsedEvents(prev => new Set([...prev, 'elena_quit']));
+      elenaDeparted = true;
     }
 
     // Build list of departed characters for AI narrative continuity
     const departed: string[] = [];
-    if (usedEvents.has('elena_quit') || (firingIntent && mentionsElena)) departed.push('Elena');
-    if (usedEvents.has('marcus_leaves') || (firingIntent && mentionsMarcus)) departed.push('Marcus');
+    if (elenaDeparted) departed.push('Elena');
+    if (marcusDeparted) departed.push('Marcus');
 
     // Determine unchosen option and effects for narrative context
     const isLeftChoice = tension ? choice === tension.left : false;

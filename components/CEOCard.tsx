@@ -296,17 +296,23 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
           {/* Your Story — unified timeline of events, choices, and custom moves */}
           {(() => {
             const storyItems: { week: number; text: string }[] = [];
+            const usedWeeks = new Set<string>(); // deduplicate by week+type
             pivotalMoments.forEach(m => {
               const weekMatch = m.match(/^Week (\d+):/);
-              storyItems.push({ week: weekMatch ? parseInt(weekMatch[1]) : 0, text: m });
+              const wk = weekMatch ? parseInt(weekMatch[1]) : 0;
+              // Skip if we already have an entry for this exact week with same start
+              const key = `${wk}-${m.slice(0, 20)}`;
+              if (!usedWeeks.has(key)) {
+                usedWeeks.add(key);
+                storyItems.push({ week: wk, text: m });
+              }
             });
-            // Add custom typed choices with context
+            // Add custom typed choices (only if not already tracked via pivotalMoments)
             customMoves.forEach(d => {
-              const briefContext = d.context.split('.')[0] || "A critical moment";
-              const choiceText = d.choice.length > 30 ? d.choice.slice(0, 27) + '...' : d.choice;
-              const alreadyTracked = storyItems.some(s => s.week === d.week && s.text.includes(choiceText.slice(0, 15)));
+              const alreadyTracked = storyItems.some(s => s.week === d.week && (s.text.includes(d.choice.slice(0, 15)) || s.text.includes('"')));
               if (!alreadyTracked) {
-                storyItems.push({ week: d.week, text: `Week ${d.week}: ${choiceText} — ${briefContext.toLowerCase()}` });
+                const trimmed = d.choice.length > 40 ? d.choice.slice(0, d.choice.lastIndexOf(' ', 37) || 37).trim() + '...' : d.choice;
+                storyItems.push({ week: d.week, text: `Week ${d.week}: "${trimmed}"` });
               }
             });
             storyItems.sort((a, b) => a.week - b.week);
