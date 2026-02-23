@@ -581,7 +581,7 @@ function buildGhostTension(ghost: PlayRecord, week: number, dims: GameDimensions
   return null;
 }
 
-export function getTension(week: number, usedIndices: Set<number>, dims?: GameDimensions, cash?: number, pastChoices?: string[], archetypeBias?: Record<string, number>, ghost?: PlayRecord | null): IndexedTension {
+export function getTension(week: number, usedIndices: Set<number>, dims?: GameDimensions, cash?: number, pastChoices?: string[], archetypeBias?: Record<string, number>, ghost?: PlayRecord | null, usedEvents?: Set<string>): IndexedTension {
   // Ghost tension — your last game talks to you (once in Act 2 around week 11-13, once in Act 3 around week 19-21)
   const ghostWeeks = [11, 12, 13, 19, 20, 21];
   if (ghost && dims && ghostWeeks.includes(week) && !usedIndices.has(-100) && !usedIndices.has(-101)) {
@@ -592,12 +592,28 @@ export function getTension(week: number, usedIndices: Set<number>, dims?: GameDi
   const choiceSet = new Set(pastChoices || []);
 
   // Filter: remove tensions whose `requires` hasn't been met, and keep ones that have
+  // Also filter out tensions that reference characters who have LEFT the game (Elena quit, Marcus left)
   const available = TENSIONS.map((t, i) => ({ ...t, idx: i })).filter(t => {
     if (usedIndices.has(t.idx)) return false;
     // If tension requires a past choice, only include if that choice was made
     if (t.requires && !choiceSet.has(t.requires.choice)) return false;
     // Fourth wall moments only appear in weeks 14-17 (one per game, late Act 2)
     if (t.fourthWall && (week < 14 || week > 17)) return false;
+    // Character continuity: if a character has left, don't show tensions about them
+    if (usedEvents && usedEvents.size > 0) {
+      for (const [eventKey, pattern] of Object.entries(CHARACTER_PATTERNS)) {
+        if (usedEvents.has(eventKey)) {
+          // Check context, left choice, and right choice text for the character name
+          if (pattern.test(t.context) || pattern.test(t.left) || pattern.test(t.right)) {
+            return false;
+          }
+          // Also check interiority, personalContext, callbackLine
+          if (t.interiority && pattern.test(t.interiority)) return false;
+          if (t.personalContext && pattern.test(t.personalContext)) return false;
+          if (t.callbackLine && pattern.test(t.callbackLine)) return false;
+        }
+      }
+    }
     return true;
   });
 
@@ -697,19 +713,20 @@ export function getTension(week: number, usedIndices: Set<number>, dims?: GameDi
 }
 
 // 2. State-dependent effect scaling — VARIABLE REWARD SCHEDULE.
-// When you're winning, wins feel bigger (momentum). When you're losing, losses cut deeper (vulnerability).
-// This creates the emotional rollercoaster that makes the game addictive — not flat, never predictable.
+// When you're winning, wins feel smaller (diminishing returns). When you're losing, losses cut MUCH deeper (vulnerability spiral).
+// This creates the emotional rollercoaster that makes the game addictive — it's HARD to recover, easy to spiral.
 function applyStatePressure(t: IndexedTension, dims: GameDimensions): IndexedTension {
   const scale = (effect: number, dimValue: number): number => {
     if (effect >= 0) {
-      // Momentum: healthy dimensions gain MORE — the rush of winning accelerates.
-      // This is the "hot hand" that makes you feel invincible right before the crash.
-      const momentum = dimValue >= 70 ? 1.4 : dimValue >= 55 ? 1.2 : 1.0;
+      // Diminishing returns: high dimensions gain LESS — prevents runaway wins.
+      // You have to fight for every point when you're ahead. Stagnation is the hidden enemy.
+      const momentum = dimValue >= 70 ? 0.7 : dimValue >= 55 ? 0.9 : 1.0;
       return Math.round(effect * momentum);
     }
-    // Vulnerability: weak dimensions take MUCH more damage.
-    // The lower you are, the faster you fall. This is what makes deaths feel sudden and tragic.
-    const vulnerability = dimValue < 20 ? 1.5 : dimValue < 30 ? 1.3 : dimValue < 40 ? 1.15 : 1.0;
+    // Vulnerability spiral: weak dimensions take BRUTAL damage.
+    // The lower you are, the faster you fall. Deaths should feel sudden, tragic, and unfair.
+    // This is the "one more turn" mechanic — you're always one bad choice from disaster.
+    const vulnerability = dimValue < 15 ? 1.8 : dimValue < 25 ? 1.5 : dimValue < 35 ? 1.3 : dimValue < 45 ? 1.1 : 1.0;
     return Math.round(effect * vulnerability);
   };
 

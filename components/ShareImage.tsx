@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useCallback, useState } from 'react';
-import { Ending, GameDimensions } from '@/lib/game/types';
+import { Ending, GameDimensions, Decision } from '@/lib/game/types';
 import { buildShareUrl, ShareData } from '@/lib/share';
 import { FONTS, weekDotColor } from '@/lib/game/constants';
 
@@ -16,6 +16,7 @@ interface ShareImageProps {
   pivotalMoments: string[];
   percentile: number;
   nearMiss: string | null;
+  decisions?: Decision[];
 }
 
 // Web Share API payload type
@@ -35,7 +36,7 @@ const ENDING_ACCENTS: Record<string, { primary: string; glow: string }> = {
 
 
 export function ShareImage({
-  ending, companyName, valuation, weekLog, dims, headline, archetype, pivotalMoments, percentile, nearMiss
+  ending, companyName, valuation, weekLog, dims, headline, archetype, pivotalMoments, percentile, nearMiss, decisions
 }: ShareImageProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
@@ -105,30 +106,36 @@ export function ShareImage({
 
       const file = new File([blob], 'theroom.png', { type: 'image/png' });
 
+      const dareText = nearMiss
+        ? `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players.\n${nearMiss}\nCan you do better?`
+        : `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players. ${ending.line}\nCan you do better?`;
+
+      // Try native share first (mobile), fall back to clipboard + download (desktop)
+      let shared = false;
       if (navigator.share) {
-        // Specific dare — near-miss makes the share personal and competitive
-        const dareText = nearMiss
-          ? `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players.\n${nearMiss}\nCan you do better?`
-          : `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players. ${ending.line}\nCan you do better?`;
-        const sharePayload: ShareData2 = {
-          title: `${companyName} — ${ending.label}`,
-          text: dareText,
-          url: shareUrl,
-        };
         try {
+          const sharePayload: ShareData2 = {
+            title: `${companyName} — ${ending.label}`,
+            text: dareText,
+            url: shareUrl,
+          };
           if (navigator.canShare?.({ files: [file] })) {
             await navigator.share({ ...sharePayload, files: [file] });
+            shared = true;
           } else {
             await navigator.share(sharePayload);
+            shared = true;
           }
-        } catch {
-          // User cancelled share sheet or share failed — this is fine
+        } catch (e) {
+          // AbortError = user cancelled (fine). Other errors = fall through to clipboard.
+          if (e instanceof DOMException && e.name === 'AbortError') {
+            shared = true; // User chose to cancel — don't show fallback
+          }
         }
-      } else {
+      }
+
+      if (!shared) {
         // Desktop fallback: copy share URL + dare text to clipboard, download image
-        const dareText = nearMiss
-          ? `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players.\n${nearMiss}\nCan you do better?`
-          : `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players. ${ending.line}\nCan you do better?`;
         try {
           await navigator.clipboard.writeText(`${dareText}\n${shareUrl}`);
           setShared(true);
@@ -148,11 +155,16 @@ export function ShareImage({
 
   return (
     <>
-      {/* Hidden render target for html2canvas */}
+      {/* Render target for html2canvas — must be in viewport for reliable capture.
+          We use clip-path to make it invisible without breaking html2canvas.
+          position:fixed + z-index:-1 keeps it behind everything. */}
       <div style={{
-        position: "absolute",
-        left: "-9999px",
+        position: "fixed",
+        left: 0,
         top: 0,
+        zIndex: -1,
+        opacity: 0.01,
+        pointerEvents: "none",
       }}>
         <div
           ref={cardRef}
@@ -376,6 +388,40 @@ export function ShareImage({
                     marginBottom: 2,
                   }}>
                     {m}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Custom moves — player's own choices */}
+            {decisions && decisions.filter(d => d.isCustom).length > 0 && (
+              <div style={{
+                borderTop: "1px solid rgba(255,255,255,0.04)",
+                paddingTop: 12,
+                marginBottom: 12,
+              }}>
+                <div style={{
+                  fontSize: 8,
+                  color: "rgba(255,238,210,0.25)",
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: "1.5px",
+                  textTransform: "uppercase" as const,
+                  marginBottom: 6,
+                  textAlign: "center" as const,
+                }}>
+                  YOUR MOVES
+                </div>
+                {decisions.filter(d => d.isCustom).slice(0, 2).map((d, i) => (
+                  <div key={i} style={{
+                    fontSize: 9,
+                    color: "rgba(255,238,210,0.35)",
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontStyle: "italic",
+                    lineHeight: 1.4,
+                    textAlign: "center" as const,
+                    marginBottom: 2,
+                  }}>
+                    Wk {d.week}: &ldquo;{d.choice.length > 40 ? d.choice.slice(0, 37) + '...' : d.choice}&rdquo;
                   </div>
                 ))}
               </div>

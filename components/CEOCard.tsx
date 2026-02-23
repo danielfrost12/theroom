@@ -466,6 +466,7 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
           pivotalMoments={pivotalMoments}
           percentile={percentile}
           nearMiss={nearMiss}
+          decisions={decisions}
         />
 
         {/* Play Again — warm, answers the haunting question. Chesky: the button should feel like a dare, not a reset. */}

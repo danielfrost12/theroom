@@ -20,7 +20,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const [cash, setCash] = useState(2500);
   const [arr, setArr] = useState(0);
   const [dims, setDims] = useState<GameDimensions>(() => {
-    const base = { company: 50, relationships: 55, energy: 65, integrity: 70 };
+    const base = { company: 45, relationships: 50, energy: 55, integrity: 60 };
     if (firstChoice === "Trust Marcus") {
       base.company -= 5; base.relationships += 5; base.integrity += 3;
     } else if (firstChoice === "Trust yourself") {
@@ -100,7 +100,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   // Get initial tension
   useEffect(() => {
     const pastChoices = decisions.map(d => d.choice);
-    const t = getTension(week, usedTensions, dims, cash, pastChoices, archetypeBias, ghost);
+    const t = getTension(week, usedTensions, dims, cash, pastChoices, archetypeBias, ghost, usedEvents);
     setTension(t);
     setIsConsequence(!!t.requires);
     setStakes(getTensionStakes(t, dims));
@@ -273,7 +273,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       setArchetypeMirror(null);
     }
 
-    const t = getTension(w, usedTensionsRef.current, d, c, decs.map(dd => dd.choice), archetypeBias, ghost);
+    const t = getTension(w, usedTensionsRef.current, d, c, decs.map(dd => dd.choice), archetypeBias, ghost, usedEvents);
     setTension(t);
     setIsConsequence(!!t.requires);
     setStakes(getTensionStakes(t, d));
@@ -405,49 +405,42 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       }
     }
 
-    // Natural recovery — weakest dimension heals slightly each week.
-    // LOSS AVERSION: first-timers get NO natural recovery.
-    // They need to feel the weight of every decision. Recovery is earned, not given.
-    // Returning players get +1 below 35 — they've learned, they deserve a small cushion.
-    if (!isFirstPlay) {
-      const dimKeys = Object.keys(newDims) as (keyof GameDimensions)[];
-      const weakestKey = dimKeys.reduce((a, b) => newDims[a] < newDims[b] ? a : b);
-      if (newDims[weakestKey] < 35) {
-        newDims[weakestKey] = Math.min(35, newDims[weakestKey] + 1);
-      }
-    }
+    // Natural recovery — REMOVED for all players.
+    // Every dimension point is earned through choices. No free healing.
+    // The game should punish neglect. If you let Energy drop, it STAYS dropped.
+    // This is what creates the "every choice matters" tension that makes it addictive.
 
-    // ARR growth — startup trajectory. Perfect play should reach ~$30-35M by week 24.
-    // IPO requires $30M ARR + week 20+. Most runs should end at $10-20M (time_up).
-    // Growth is mostly LINEAR (additive), not compound. Compounding creates runaway wins.
+    // ARR growth — startup trajectory. Perfect play should reach ~$25-30M by week 24.
+    // IPO requires $30M ARR + week 20+. This should be RARE — only the best runs achieve it.
+    // Growth is LINEAR (additive), not compound. Made harder: higher thresholds, lower probabilities.
     const newWeek = week + 1;
     const act = getAct(newWeek);
     let arrDelta: number;
     if (act === 1) {
-      // Early stage: finding product-market fit. Slow, uncertain.
-      if (newDims.company >= 50) arrDelta = Math.random() < 0.6 ? 1 : 0;
-      else if (newDims.company >= 35) arrDelta = Math.random() < 0.3 ? 1 : 0;
+      // Early stage: finding product-market fit. Slow, uncertain. Most weeks = zero.
+      if (newDims.company >= 55) arrDelta = Math.random() < 0.5 ? 1 : 0;
+      else if (newDims.company >= 40) arrDelta = Math.random() < 0.2 ? 1 : 0;
       else arrDelta = 0;
     } else if (act === 2) {
-      // Growth stage: additive growth, NOT compound. +1-2/week if company is healthy.
-      if (newDims.company >= 55) arrDelta = Math.random() < 0.8 ? 2 : 1;
-      else if (newDims.company >= 40) arrDelta = Math.random() < 0.6 ? 1 : 0;
-      else if (newDims.company >= 25) arrDelta = Math.random() < 0.3 ? 1 : 0;
-      else arrDelta = Math.random() < 0.3 ? -1 : 0; // Shrinking if company is dying
+      // Growth stage: +1-2/week only if company is STRONG. Mediocre company = stagnation.
+      if (newDims.company >= 60) arrDelta = Math.random() < 0.7 ? 2 : 1;
+      else if (newDims.company >= 45) arrDelta = Math.random() < 0.5 ? 1 : 0;
+      else if (newDims.company >= 30) arrDelta = Math.random() < 0.2 ? 1 : 0;
+      else arrDelta = Math.random() < 0.4 ? -1 : 0; // Shrinking faster if company is dying
     } else {
-      // Late stage: slightly faster additive. +2-3/week at peak. Penalty if weak.
-      if (newDims.company >= 55) arrDelta = Math.random() < 0.7 ? 3 : 2;
-      else if (newDims.company >= 40) arrDelta = Math.random() < 0.6 ? 2 : 1;
-      else if (newDims.company >= 25) arrDelta = Math.random() < 0.4 ? 1 : 0;
-      else arrDelta = -1; // Company is failing, ARR shrinks
+      // Late stage: +2-3/week ONLY at peak. Penalty zone is wider.
+      if (newDims.company >= 60) arrDelta = Math.random() < 0.6 ? 3 : 2;
+      else if (newDims.company >= 45) arrDelta = Math.random() < 0.5 ? 2 : 1;
+      else if (newDims.company >= 30) arrDelta = Math.random() < 0.3 ? 1 : 0;
+      else arrDelta = Math.random() < 0.5 ? -2 : -1; // Company is failing, ARR shrinks fast
     }
     const newArr = Math.max(0, arr + arrDelta);
 
-    // Cash burn — real startup economics. $2.5M seed, ~$80-120K/week base.
+    // Cash burn — real startup economics. $2.5M seed, ~$100K/week base.
     // Burn scales with growth: more ARR = more headcount = more burn.
     // Revenue = ARR / 52 weeks/year. ARR is in $M, cash is in $K.
-    const baseBurn = 80; // $80K/week base (rent, core team, infra)
-    const growthBurn = Math.floor(newArr * 6); // each $1M ARR adds ~$6K/week burn (sales, support, eng)
+    const baseBurn = 100; // $100K/week base (rent, core team, infra) — up from 80K, more realistic
+    const growthBurn = Math.floor(newArr * 8); // each $1M ARR adds ~$8K/week burn (more aggressive hiring)
     const weeklyBurn = baseBurn + growthBurn;
     const weeklyRevenue = Math.floor(newArr * 1000 / 52); // correct: ARR / 52 weeks
     const newCash = Math.max(0, cash - weeklyBurn + weeklyRevenue);
@@ -502,10 +495,15 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     const newWeekLog = [...weekLog, weekColor];
     setWeekLog(newWeekLog);
 
+    // Build list of departed characters for AI narrative continuity
+    const departed: string[] = [];
+    if (usedEvents.has('elena_quit')) departed.push('Elena');
+    if (usedEvents.has('marcus_leaves')) departed.push('Marcus');
+
     // Generate narrative
     const narrativeText = await generateNarrative(
       tension?.context || customText,
-      choice, newDims, week, companyName
+      choice, newDims, week, companyName, departed.length > 0 ? departed : undefined
     );
 
     // Enforce narrative brevity — 2 sentences max, 35 words max. A flash, not a paragraph.
@@ -547,10 +545,13 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             const compressedArr = Math.max(0, Math.round(newArr + compArrPerWeek * skipWeeks));
             const compressedWeek = newWeek + skipWeeks;
 
+            // Drift: time passes and things decay without your attention.
+            // Relationships and energy rot faster — neglect is the silent killer.
             const driftDims = { ...newDims };
-            driftDims.relationships = Math.max(0, driftDims.relationships - skipWeeks);
-            driftDims.energy = Math.max(0, driftDims.energy - skipWeeks);
-            driftDims.company = Math.max(0, driftDims.company - Math.ceil(skipWeeks * 0.5));
+            driftDims.relationships = Math.max(0, driftDims.relationships - skipWeeks * 2);
+            driftDims.energy = Math.max(0, driftDims.energy - skipWeeks * 2);
+            driftDims.company = Math.max(0, driftDims.company - skipWeeks);
+            driftDims.integrity = Math.max(0, driftDims.integrity - Math.ceil(skipWeeks * 0.5));
             setDims(driftDims);
             setWeek(compressedWeek);
             setCash(compressedCash);
@@ -1040,16 +1041,16 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             {/* Custom choice feedback — show what the AI decided your move did */}
             {customOutcome && customOutcome.wasCustom && (
               <div style={{
-                marginTop: 16, paddingTop: 12,
-                borderTop: "1px solid rgba(255,255,255,0.04)",
-                opacity: 0, animation: "fadeUp 0.6s ease 0.8s forwards",
+                marginTop: 20, paddingTop: 16,
+                borderTop: "1px solid rgba(255,238,210,0.08)",
+                opacity: 0, animation: "fadeUp 0.6s ease 0.5s forwards",
               }}>
                 <div style={{
-                  fontSize: 9,
-                  color: "rgba(255,255,255,0.2)",
+                  fontSize: 10,
+                  color: "rgba(255,238,210,0.35)",
                   fontFamily: FONTS.mono,
                   letterSpacing: "1.5px",
-                  marginBottom: 6,
+                  marginBottom: 10,
                   textAlign: "center",
                 }}>
                   YOUR MOVE
@@ -1057,19 +1058,20 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                 {/* AI verdict — one-liner judgment of the player's creative input */}
                 {customOutcome.verdict && (
                   <div style={{
-                    fontSize: 12,
-                    color: "rgba(255,238,210,0.55)",
+                    fontSize: 14,
+                    color: "rgba(255,238,210,0.7)",
                     fontStyle: "italic",
                     fontFamily: FONTS.display,
                     textAlign: "center",
-                    marginBottom: 8,
-                    lineHeight: 1.5,
+                    marginBottom: 12,
+                    lineHeight: 1.6,
+                    fontWeight: 400,
                   }}>
-                    {customOutcome.verdict}
+                    &ldquo;{customOutcome.verdict}&rdquo;
                   </div>
                 )}
                 <div style={{
-                  display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap",
+                  display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap",
                 }}>
                   {([
                     { key: "company" as const, label: "Company" },
@@ -1081,9 +1083,10 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                     if (val === 0) return null;
                     return (
                       <span key={key} style={{
-                        fontSize: 10,
+                        fontSize: 12,
                         fontFamily: FONTS.mono,
-                        color: val > 0 ? "rgba(74,222,128,0.6)" : "rgba(248,113,113,0.6)",
+                        fontWeight: 600,
+                        color: val > 0 ? "rgba(74,222,128,0.7)" : "rgba(248,113,113,0.7)",
                         letterSpacing: "0.3px",
                       }}>
                         {label} {val > 0 ? `+${val}` : val}
@@ -1091,6 +1094,31 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                     );
                   })}
                 </div>
+                {/* Net impact summary — one sentence on what just happened */}
+                {(() => {
+                  const efx = customOutcome.effects;
+                  const total = (efx.company || 0) + (efx.relationships || 0) + (efx.energy || 0) + (efx.integrity || 0);
+                  const dimKeys: (keyof GameDimensions)[] = ['company', 'relationships', 'energy', 'integrity'];
+                  const dimLabels: Record<string, string> = { company: 'the company', relationships: 'your people', energy: 'your energy', integrity: 'your reputation' };
+                  const biggest = dimKeys.reduce((a, b) => Math.abs(efx[a] || 0) > Math.abs(efx[b] || 0) ? a : b);
+                  const bigVal = efx[biggest] || 0;
+                  if (Math.abs(bigVal) < 3) return null;
+                  const impact = bigVal > 0
+                    ? `That helped ${dimLabels[biggest]}.`
+                    : `That hurt ${dimLabels[biggest]}.`;
+                  return (
+                    <div style={{
+                      marginTop: 10,
+                      fontSize: 11,
+                      color: "rgba(255,255,255,0.25)",
+                      fontFamily: FONTS.mono,
+                      textAlign: "center",
+                      letterSpacing: "0.3px",
+                    }}>
+                      {impact}{total < -10 ? " Everything has a cost." : total > 10 ? " Bold move." : ""}
+                    </div>
+                  );
+                })()}
               </div>
             )}
             {foreshadow && (

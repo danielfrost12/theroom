@@ -1,13 +1,13 @@
 import { GameDimensions, Ending, Decision } from '../game/types';
 
 export async function generateNarrative(
-  context: string, choice: string, dims: GameDimensions, week: number, companyName: string
+  context: string, choice: string, dims: GameDimensions, week: number, companyName: string, departedCharacters?: string[]
 ): Promise<string> {
   try {
     const res = await fetch('/api/narrative', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'scene', context, choice, dims, week, companyName }),
+      body: JSON.stringify({ type: 'scene', context, choice, dims, week, companyName, departedCharacters }),
     });
     if (!res.ok) throw new Error(`API ${res.status}`);
     const data = await res.json();
@@ -75,10 +75,10 @@ function getFallbackCustomEffects(): { company: number; relationships: number; e
   return result;
 }
 
-export function getFallbackNarrative(choice: string, context: string): string {
+export function getFallbackNarrative(choice: string, context: string, departedCharacters?: string[]): string {
   void context;
   void choice;
-  const narratives = [
+  let narratives = [
     "Marcus looks up. Priya doesn't.",
     "Slack goes quiet. Elena's typing indicator disappears.",
     "Priya exhales. The whiteboard marker is already in her hand.",
@@ -87,6 +87,16 @@ export function getFallbackNarrative(choice: string, context: string): string {
     "Marcus nods once. That's enough.",
     "Elena closes her laptop. Slowly.",
     "You hear Priya laugh in the next room. It doesn't sound happy.",
+    "The office hums. Nobody speaks.",
+    "Your phone buzzes. You don't check it.",
+    "The whiteboard hasn't been erased in weeks.",
+    "Someone left a coffee on your desk. It's cold.",
   ];
+  // Filter out narratives mentioning departed characters
+  if (departedCharacters && departedCharacters.length > 0) {
+    narratives = narratives.filter(n =>
+      !departedCharacters.some(c => n.toLowerCase().includes(c.toLowerCase()))
+    );
+  }
   return narratives[Math.floor(Math.random() * narratives.length)];
 }
