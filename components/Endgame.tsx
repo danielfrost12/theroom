@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { FONTS, COLORS } from '@/lib/game/constants';
 import { Ending, GameDimensions, Decision } from '@/lib/game/types';
 import { getValuation, detectArchetype } from '@/lib/game/engine';
-import { getRank, savePlayRecord } from '@/lib/game/stats';
+import { getRank, savePlayRecord, getPercentile, getNearMiss } from '@/lib/game/stats';
 import { generateEndgameNarrative } from '@/lib/ai/narrative';
 import { SceneBackground } from './SceneBackground';
 import { CEOCard } from './CEOCard';
@@ -121,6 +121,8 @@ export function Endgame({ ending, arr, dims, decisions, weekLog, pivotalMoments,
   const archetype = detectArchetype(dims, decisions, weekLog.length);
   const hauntingQuestion = getHauntingQuestion(ending, decisions, dims);
   const storySentence = getPersonalStorySentence(companyName, ending, weekLog, dims);
+  const percentile = getPercentile(valuation);
+  const nearMiss = getNearMiss(ending.type, dims, arr, weekLog.length);
 
   // Save play record to localStorage on mount — includes ghost data for future playthroughs
   useEffect(() => {
@@ -228,6 +230,8 @@ export function Endgame({ ending, arr, dims, decisions, weekLog, pivotalMoments,
             dims={dims}
             archetype={archetype}
             pivotalMoments={moments}
+            percentile={percentile}
+            nearMiss={nearMiss}
             onPlayAgain={onPlayAgain}
           />
         </div>

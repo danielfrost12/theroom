@@ -17,6 +17,8 @@ interface CEOCardProps {
   dims: GameDimensions;
   archetype: string;
   pivotalMoments: string[];
+  percentile: number;
+  nearMiss: string | null;
   onPlayAgain: () => void;
 }
 
@@ -45,7 +47,7 @@ function viralSummary(weekCount: number, dims: GameDimensions, ending: Ending): 
   return `${weekCount} weeks. Chose ${chose} over ${lost}.`;
 }
 
-export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRuns, headline, mirror, dims, archetype, pivotalMoments, onPlayAgain }: CEOCardProps) {
+export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRuns, headline, mirror, dims, archetype, pivotalMoments, percentile, nearMiss, onPlayAgain }: CEOCardProps) {
   const playCount = getPlayCount();
   const bestVal = getBestValuation();
   const summary = viralSummary(weekLog.length, dims, ending);
@@ -189,9 +191,38 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
               letterSpacing: "2px",
               fontFamily: FONTS.mono,
               textTransform: "uppercase" as const,
+              marginBottom: 8,
             }}>
               Final Valuation
             </div>
+
+            {/* Percentile — social comparison that stings or delights */}
+            <div style={{
+              fontSize: 12,
+              color: percentile >= 80
+                ? "rgba(134,239,172,0.7)"
+                : percentile >= 50
+                  ? "rgba(255,255,255,0.35)"
+                  : "rgba(248,113,113,0.6)",
+              fontFamily: FONTS.mono,
+              letterSpacing: "0.5px",
+            }}>
+              Better than {percentile}% of players
+            </div>
+
+            {/* Near-miss — the thing that stings. What you almost had. */}
+            {nearMiss && (
+              <div style={{
+                fontSize: 11,
+                color: "rgba(248,113,113,0.55)",
+                fontFamily: FONTS.mono,
+                letterSpacing: "0.3px",
+                marginTop: 8,
+                lineHeight: 1.5,
+              }}>
+                {nearMiss}
+              </div>
+            )}
           </div>
 
           {/* Journey strip — colored dots */}

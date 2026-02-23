@@ -117,6 +117,66 @@ export function getCollectionStats(): {
   };
 }
 
+// Percentile rank against "all players" — simulated distribution that feels real.
+// Based on a bell curve centered on $8M valuation. Most players cluster $0-15M.
+export function getPercentile(valuation: number): number {
+  // Simulated CDF — designed so:
+  // $0 = 0%, $5M = 25%, $10M = 45%, $20M = 70%, $30M = 85%, $50M+ = 95%+
+  if (valuation <= 0) return Math.floor(Math.random() * 5 + 3); // 3-7%
+  if (valuation <= 2) return Math.floor(Math.random() * 5 + 12); // 12-16%
+  if (valuation <= 5) return Math.floor(Math.random() * 5 + 22); // 22-26%
+  if (valuation <= 10) return Math.floor(Math.random() * 8 + 38); // 38-45%
+  if (valuation <= 15) return Math.floor(Math.random() * 8 + 52); // 52-59%
+  if (valuation <= 20) return Math.floor(Math.random() * 8 + 62); // 62-69%
+  if (valuation <= 30) return Math.floor(Math.random() * 6 + 78); // 78-83%
+  if (valuation <= 50) return Math.floor(Math.random() * 5 + 88); // 88-92%
+  if (valuation <= 80) return Math.floor(Math.random() * 3 + 94); // 94-96%
+  return Math.floor(Math.random() * 2 + 97); // 97-98%
+}
+
+// Near-miss message — what you almost had, designed to sting
+export function getNearMiss(ending: string, dims: { company: number; relationships: number; energy: number; integrity: number }, arr: number, week: number): string | null {
+  const dimLabels: Record<string, string> = { company: 'Company', relationships: 'People', energy: 'Energy', integrity: 'Ethics' };
+
+  if (ending === 'burnout' && arr >= 20) {
+    return `$${arr}M ARR when you collapsed. ${24 - week} weeks from the finish line.`;
+  }
+  if (ending === 'burnout' && dims.company > 50) {
+    return `The company was thriving. You weren't. ${dims.energy} Energy when it ended.`;
+  }
+  if (ending === 'bankrupt' && dims.energy > 40 && dims.relationships > 40) {
+    return `The team was healthy. The bank account wasn't. You needed $${Math.round(40 + arr * 1.5)}K more.`;
+  }
+  if (ending === 'disgraced' && arr >= 10) {
+    return `$${arr}M ARR. All of it gone with your reputation.`;
+  }
+  if (ending === 'board_removed' && dims.company > 50) {
+    return `Company at ${dims.company}. They didn't fire the company. They fired you.`;
+  }
+  if (ending === 'time_up' && arr >= 20) {
+    const needed = 30 - arr;
+    return `$${needed}M more ARR and you would have IPO'd. ${needed <= 5 ? "That close." : ""}`;
+  }
+  if (ending === 'time_up') {
+    // Find the weakest dimension
+    const entries = Object.entries(dims) as [string, number][];
+    const weakest = entries.reduce((a, b) => a[1] < b[1] ? a : b);
+    if (weakest[1] < 30) {
+      return `${dimLabels[weakest[0]]} at ${weakest[1]} held everything back.`;
+    }
+  }
+  if (ending === 'forced_sale') {
+    return `Forced to sell at $${Math.round(arr * 0.8)}M. The company was worth $${Math.round(arr * 2.5)}M on a good day.`;
+  }
+
+  // Generic near-miss for deaths
+  if (['burnout', 'bankrupt', 'disgraced', 'board_removed'].includes(ending)) {
+    return `${24 - week} weeks left. The story wasn't supposed to end here.`;
+  }
+
+  return null;
+}
+
 // Stats for onboarding — returns real data for returning players, defaults for first-timers
 export function getPlayerStats(): {
   totalPlayers: string;

@@ -672,17 +672,20 @@ export function getTension(week: number, usedIndices: Set<number>, dims?: GameDi
   return applyStatePressure(picked, dims);
 }
 
-// 2. State-dependent effect scaling — the same choice costs more when you're weak.
-// But also: when you're strong, your gains compound slightly. Reward good play.
+// 2. State-dependent effect scaling — VARIABLE REWARD SCHEDULE.
+// When you're winning, wins feel bigger (momentum). When you're losing, losses cut deeper (vulnerability).
+// This creates the emotional rollercoaster that makes the game addictive — not flat, never predictable.
 function applyStatePressure(t: IndexedTension, dims: GameDimensions): IndexedTension {
   const scale = (effect: number, dimValue: number): number => {
     if (effect >= 0) {
-      // Strength bonus: healthy dimensions gain a little extra (momentum)
-      const momentum = dimValue >= 60 ? 1.2 : 1.0;
+      // Momentum: healthy dimensions gain MORE — the rush of winning accelerates.
+      // This is the "hot hand" that makes you feel invincible right before the crash.
+      const momentum = dimValue >= 70 ? 1.4 : dimValue >= 55 ? 1.2 : 1.0;
       return Math.round(effect * momentum);
     }
-    // Vulnerability: weak dimensions take more damage, but capped at 1.3x (was 1.6x)
-    const vulnerability = dimValue < 25 ? 1.3 : dimValue < 40 ? 1.15 : 1.0;
+    // Vulnerability: weak dimensions take MUCH more damage.
+    // The lower you are, the faster you fall. This is what makes deaths feel sudden and tragic.
+    const vulnerability = dimValue < 20 ? 1.5 : dimValue < 30 ? 1.3 : dimValue < 40 ? 1.15 : 1.0;
     return Math.round(effect * vulnerability);
   };
 

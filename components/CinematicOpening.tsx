@@ -364,63 +364,63 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
               </div>
 
               {/* Input — writing on glass */}
-              {/* Safari AutoFill nuclear kill: type="search" + readOnly on mount + honeypot */}
+              {/* Safari Mobile AutoFill kill: contentEditable div instead of input.
+                  Mobile Safari aggressively autofills ANY <input> with contact info.
+                  type="search", honeypots, readOnly — none work reliably on iOS.
+                  A contentEditable div is invisible to Safari's autofill engine. */}
               <div style={{ position: "relative" }}>
-                {/* Honeypot — Safari autofills this invisible field instead */}
-                <input
-                  type="text"
-                  name="name"
-                  autoComplete="name"
-                  tabIndex={-1}
-                  aria-hidden="true"
+                <div
+                  contentEditable
+                  suppressContentEditableWarning
+                  role="textbox"
+                  aria-label="Company name"
+                  onInput={e => {
+                    const text = (e.currentTarget.textContent || "").slice(0, 28);
+                    setCompanyName(text);
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleStart();
+                    }
+                  }}
+                  onPaste={e => {
+                    e.preventDefault();
+                    const text = e.clipboardData.getData("text/plain").slice(0, 28);
+                    document.execCommand("insertText", false, text);
+                  }}
+                  ref={(el) => {
+                    // Auto-focus on mount
+                    if (el && !inputReady) {
+                      setTimeout(() => { el.focus(); setInputReady(true); }, 100);
+                    }
+                  }}
+                  data-placeholder=""
                   style={{
-                    position: "absolute", opacity: 0, height: 0, width: 0,
-                    pointerEvents: "none", overflow: "hidden",
+                    background: "transparent",
+                    border: "none",
+                    borderBottom: `1px solid ${companyName.trim() ? "rgba(255,238,210,0.3)" : "rgba(255,255,255,0.1)"}`,
+                    padding: "14px 0",
+                    width: "100%",
+                    maxWidth: 320,
+                    margin: "0 auto",
+                    fontSize: "clamp(24px, 6.5vw, 34px)",
+                    color: "#fff",
+                    textAlign: "center" as const,
+                    fontFamily: FONTS.display,
+                    fontWeight: 600,
+                    letterSpacing: "-0.5px",
+                    outline: "none",
+                    transition: "border-color 0.8s ease",
+                    caretColor: "rgba(255,238,210,0.6)",
+                    minHeight: "1.2em",
+                    WebkitUserSelect: "text" as const,
+                    userSelect: "text" as const,
+                    wordBreak: "break-all" as const,
+                    whiteSpace: "nowrap" as const,
+                    overflow: "hidden",
                   }}
                 />
-                <div onSubmit={e => e.preventDefault()}>
-                  <input
-                    id="company-name"
-                    name="q"
-                    type="search"
-                    value={companyName}
-                    onChange={e => setCompanyName(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleStart(); } }}
-                    autoFocus
-                    maxLength={28}
-                    readOnly={!inputReady}
-                    onFocus={() => { if (!inputReady) setTimeout(() => setInputReady(true), 100); }}
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="words"
-                    spellCheck={false}
-                    data-form-type="other"
-                    data-lpignore="true"
-                    data-1p-ignore="true"
-                    enterKeyHint="go"
-                    aria-label="Company name"
-                    placeholder=""
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      borderBottom: `1px solid ${companyName.trim() ? "rgba(255,238,210,0.3)" : "rgba(255,255,255,0.1)"}`,
-                      padding: "14px 0",
-                      width: "100%",
-                      maxWidth: 320,
-                      fontSize: "clamp(24px, 6.5vw, 34px)",
-                      color: "#fff",
-                      textAlign: "center",
-                      fontFamily: FONTS.display,
-                      fontWeight: 600,
-                      letterSpacing: "-0.5px",
-                      outline: "none",
-                      transition: "border-color 0.8s ease",
-                      caretColor: "rgba(255,238,210,0.6)",
-                      WebkitAppearance: "none",
-                      appearance: "none" as const,
-                    }}
-                  />
-                </div>
               </div>
 
               {/* The commitment — fades in when the name exists */}

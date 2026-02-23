@@ -289,18 +289,23 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       if (shadow) setForeshadow(shadow);
     }
 
-    // Apply effects with momentum dampening + honeymoon protection
+    // Apply effects — LOSS AVERSION: first plays have LESS protection.
+    // First-timers should die. That's the hook. "I can do better" only works if the first run stings.
+    // Returning players get slightly more cushion because they've earned the right to explore.
+    const isFirstPlay = !ghost; // No previous play = first timer
     const newDims = { ...dims };
     const currentAct = getAct(week);
     if (!isCustom) {
       (Object.keys(effects) as (keyof GameDimensions)[]).forEach(k => {
         let delta = effects[k] || 0;
-        // Honeymoon protection: slight cushion in Act 1 (10% reduction, not 25%)
-        if (delta < 0 && currentAct === 1) {
+        // Honeymoon protection: ONLY for returning players in Act 1.
+        // First-timers feel the full weight from week 1. Every choice costs.
+        if (delta < 0 && currentAct === 1 && !isFirstPlay) {
           delta = Math.ceil(delta * 0.9);
         }
-        // Floor protection: only when truly critical (<15), and modest
-        if (delta < 0 && newDims[k] < 15) {
+        // Floor protection: first-timers get NONE. Returning players get a small cushion.
+        // This means first plays spiral faster when they make bad choices.
+        if (delta < 0 && newDims[k] < 15 && !isFirstPlay) {
           delta = Math.ceil(delta * 0.5);
         }
         newDims[k] = Math.max(0, Math.min(100, newDims[k] + delta));
@@ -323,13 +328,16 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       }
     }
 
-    // Natural recovery — your weakest dimension heals slightly each week.
-    // Tiny: +1 if below 35. Just enough to prevent instant death spirals,
-    // not enough to bail you out of bad strategy.
-    const dimKeys = Object.keys(newDims) as (keyof GameDimensions)[];
-    const weakestKey = dimKeys.reduce((a, b) => newDims[a] < newDims[b] ? a : b);
-    if (newDims[weakestKey] < 35) {
-      newDims[weakestKey] = Math.min(35, newDims[weakestKey] + 1);
+    // Natural recovery — weakest dimension heals slightly each week.
+    // LOSS AVERSION: first-timers get NO natural recovery.
+    // They need to feel the weight of every decision. Recovery is earned, not given.
+    // Returning players get +1 below 35 — they've learned, they deserve a small cushion.
+    if (!isFirstPlay) {
+      const dimKeys = Object.keys(newDims) as (keyof GameDimensions)[];
+      const weakestKey = dimKeys.reduce((a, b) => newDims[a] < newDims[b] ? a : b);
+      if (newDims[weakestKey] < 35) {
+        newDims[weakestKey] = Math.min(35, newDims[weakestKey] + 1);
+      }
     }
 
     // ARR growth — startup trajectory. Perfect play should reach ~$30-35M by week 24.
