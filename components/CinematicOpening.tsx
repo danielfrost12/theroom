@@ -16,6 +16,7 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
   const [choiceMade, setChoiceMade] = useState<string | null>(null);
   const [showNameInput, setShowNameInput] = useState(false);
   const [companyName, setCompanyName] = useState("");
+  const [inputReady, setInputReady] = useState(false);
   const [ghost] = useState(() => getLastPlay());
 
   // The ambient text changes based on how your last game ended
@@ -314,63 +315,99 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
           <div style={{
             maxWidth: 440, width: "100%",
             animation: "fadeUp 1s ease",
+            display: "flex", flexDirection: "column", alignItems: "center",
           }}>
+            {/* The prompt — a quiet statement, not instructions */}
             <div style={{
-              padding: "0 8px",
+              fontFamily: FONTS.display,
+              fontSize: "clamp(15px, 3.5vw, 18px)",
+              color: "rgba(255,255,255,0.4)",
+              fontWeight: 300,
+              fontStyle: "italic",
+              lineHeight: 1.7,
+              marginBottom: 56,
+              letterSpacing: "0.3px",
               textAlign: "center",
             }}>
-              {/* The prompt — not instructions, a statement */}
-              <div style={{
-                fontFamily: FONTS.display,
-                fontSize: "clamp(14px, 3vw, 16px)",
-                color: "rgba(255,255,255,0.35)",
-                fontWeight: 300,
-                lineHeight: 1.7,
-                marginBottom: 48,
-                letterSpacing: "0.3px",
-              }}>
-                That was one decision. You&apos;ll make twenty-three more.
-              </div>
+              That was one decision. You&apos;ll make twenty-three more.
+            </div>
 
-              {/* Label — clear and direct */}
+            {/* The glass card — the name input lives here */}
+            <div style={{
+              width: "100%",
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 20,
+              padding: "40px 28px 36px",
+              textAlign: "center",
+              position: "relative",
+              overflow: "hidden",
+            }}>
+              {/* Subtle inner glow — makes the card feel alive */}
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                background: "radial-gradient(ellipse at 50% 0%, rgba(255,238,210,0.04) 0%, transparent 60%)",
+                pointerEvents: "none",
+              }} />
+
+              {/* Label */}
               <div style={{
                 fontSize: 10,
-                color: "rgba(255,255,255,0.2)",
+                color: "rgba(255,255,255,0.25)",
                 fontFamily: FONTS.mono,
-                letterSpacing: "2px",
+                letterSpacing: "2.5px",
                 textTransform: "uppercase",
-                marginBottom: 16,
+                marginBottom: 20,
+                position: "relative",
               }}>
                 Name your company
               </div>
 
-              {/* The input — writing on glass */}
-              <div style={{ marginBottom: 12, position: "relative" }}>
-                <form autoComplete="off" onSubmit={e => { e.preventDefault(); handleStart(); }} style={{ margin: 0 }}>
+              {/* Input — writing on glass */}
+              {/* Safari AutoFill nuclear kill: type="search" + readOnly on mount + honeypot */}
+              <div style={{ position: "relative" }}>
+                {/* Honeypot — Safari autofills this invisible field instead */}
+                <input
+                  type="text"
+                  name="name"
+                  autoComplete="name"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute", opacity: 0, height: 0, width: 0,
+                    pointerEvents: "none", overflow: "hidden",
+                  }}
+                />
+                <div onSubmit={e => e.preventDefault()}>
                   <input
                     id="company-name"
-                    name="company-game-name"
+                    name="q"
+                    type="search"
                     value={companyName}
                     onChange={e => setCompanyName(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleStart(); } }}
                     autoFocus
                     maxLength={28}
-                    autoComplete="nope"
+                    readOnly={!inputReady}
+                    onFocus={() => { if (!inputReady) setTimeout(() => setInputReady(true), 100); }}
+                    autoComplete="off"
                     autoCorrect="off"
                     autoCapitalize="words"
                     spellCheck={false}
                     data-form-type="other"
                     data-lpignore="true"
-                    inputMode="text"
-                    role="textbox"
+                    data-1p-ignore="true"
+                    enterKeyHint="go"
                     aria-label="Company name"
+                    placeholder=""
                     style={{
                       background: "transparent",
                       border: "none",
-                      borderBottom: `1px solid ${companyName.trim() ? "rgba(255,238,210,0.25)" : "rgba(255,255,255,0.08)"}`,
-                      padding: "12px 0",
+                      borderBottom: `1px solid ${companyName.trim() ? "rgba(255,238,210,0.3)" : "rgba(255,255,255,0.1)"}`,
+                      padding: "14px 0",
                       width: "100%",
-                      maxWidth: 340,
-                      fontSize: "clamp(26px, 7vw, 36px)",
+                      maxWidth: 320,
+                      fontSize: "clamp(24px, 6.5vw, 34px)",
                       color: "#fff",
                       textAlign: "center",
                       fontFamily: FONTS.display,
@@ -378,28 +415,32 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                       letterSpacing: "-0.5px",
                       outline: "none",
                       transition: "border-color 0.8s ease",
-                      caretColor: "rgba(255,238,210,0.5)",
+                      caretColor: "rgba(255,238,210,0.6)",
+                      WebkitAppearance: "none",
+                      appearance: "none" as const,
                     }}
                   />
-                </form>
+                </div>
               </div>
 
               {/* The commitment — fades in when the name exists */}
               <div style={{
                 opacity: companyName.trim() ? 1 : 0,
-                transform: companyName.trim() ? "translateY(0)" : "translateY(12px)",
-                transition: "all 0.6s ease",
-                marginTop: 40,
+                transform: companyName.trim() ? "translateY(0)" : "translateY(8px)",
+                transition: "all 0.5s ease",
+                marginTop: 32,
+                position: "relative",
               }}>
                 <button
                   onClick={handleStart}
                   disabled={!companyName.trim()}
                   style={{
-                    background: "transparent",
-                    border: "none",
+                    background: companyName.trim() ? "rgba(255,238,210,0.08)" : "transparent",
+                    border: `1px solid ${companyName.trim() ? "rgba(255,238,210,0.15)" : "transparent"}`,
+                    borderRadius: 50,
                     color: COLORS.warm,
-                    padding: "16px 48px",
-                    fontSize: 16,
+                    padding: "14px 48px",
+                    fontSize: 15,
                     fontWeight: 500,
                     cursor: companyName.trim() ? "pointer" : "default",
                     fontFamily: FONTS.body,
@@ -407,24 +448,31 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                     letterSpacing: "0.5px",
                   }}
                   onMouseEnter={e => {
-                    if (companyName.trim()) e.currentTarget.style.color = COLORS.warmHover;
+                    if (companyName.trim()) {
+                      e.currentTarget.style.background = "rgba(255,238,210,0.12)";
+                      e.currentTarget.style.color = COLORS.warmHover;
+                    }
                   }}
                   onMouseLeave={e => {
+                    e.currentTarget.style.background = "rgba(255,238,210,0.08)";
                     e.currentTarget.style.color = COLORS.warm;
                   }}
                 >
                   Begin &rarr;
                 </button>
-                <div style={{
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.15)",
-                  marginTop: 8,
-                  fontFamily: FONTS.mono,
-                  letterSpacing: "1px",
-                }}>
-                  24 weeks &middot; no going back
-                </div>
               </div>
+            </div>
+
+            {/* Stakes whisper — below the card */}
+            <div style={{
+              fontSize: 11,
+              color: "rgba(255,255,255,0.12)",
+              marginTop: 20,
+              fontFamily: FONTS.mono,
+              letterSpacing: "1px",
+              textAlign: "center",
+            }}>
+              24 weeks &middot; no going back
             </div>
           </div>
         )}

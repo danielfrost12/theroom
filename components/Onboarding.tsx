@@ -89,6 +89,23 @@ export function Onboarding({ onStart }: OnboardingProps) {
         pointerEvents: "none",
       }} />
 
+      {/* Noise texture — Ive-level depth */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+        opacity: 0.035,
+        backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+        backgroundRepeat: "repeat",
+        backgroundSize: "256px 256px",
+        pointerEvents: "none",
+      }} />
+
+      {/* Vignette — depth and focus */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+        background: "radial-gradient(ellipse at 50% 75%, transparent 20%, rgba(0,0,0,0.4) 100%)",
+        pointerEvents: "none",
+      }} />
+
       {/* Content — uses dvh to fit within visible viewport on mobile */}
       <div style={{
         position: "relative", zIndex: 1,
@@ -128,7 +145,9 @@ export function Onboarding({ onStart }: OnboardingProps) {
                 letterSpacing: "-0.5px",
                 marginTop: 8,
                 opacity: 0,
-                animation: phase >= 1 ? "fadeUp 1s ease 1.2s forwards" : "none",
+                animation: phase >= 1
+                  ? "fadeUp 1s ease 1.2s forwards, iveDrift 8s ease-in-out 2.5s infinite"
+                  : "none",
               }}>
                 Prove it.
               </div>
@@ -311,28 +330,16 @@ export function Onboarding({ onStart }: OnboardingProps) {
           </>
         )}
 
-        {/* Phase 4: Entry prompt — the same for everyone */}
+        {/* Phase 4: Entry prompt — just a breathing dot. The restraint IS the design. */}
         <div style={{
           opacity: phase >= 4 ? 1 : 0,
-          transition: "opacity 1.2s ease",
+          transition: "opacity 2s ease",
         }}>
           <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
-            <div style={{
-              width: 6, height: 6, borderRadius: "50%",
-              background: "rgba(255,255,255,0.5)",
-              animation: "pulse 2s infinite",
-            }} />
-            <span style={{
-              fontFamily: FONTS.mono,
-              fontSize: 12,
-              color: "rgba(255,255,255,0.40)",
-              letterSpacing: "1px",
-            }}>
-              {stats.isReturning ? "TAP ANYWHERE TO TRY AGAIN" : "TAP ANYWHERE TO BEGIN"}
-            </span>
-          </div>
+            width: 6, height: 6, borderRadius: "50%",
+            background: "rgba(255,255,255,0.4)",
+            animation: "softPulse 4s ease-in-out infinite",
+          }} />
         </div>
       </div>
     </div>
