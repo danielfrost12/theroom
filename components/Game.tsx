@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { FONTS, COLORS, TEMPO, getActTempo, shouldEarnSilence, getDashboardVisibility, weekDotColor } from '@/lib/game/constants';
+import { FONTS, COLORS, TEMPO, getActTempo, shouldEarnSilence, weekDotColor } from '@/lib/game/constants';
 import { GameDimensions, Ending, Decision, IndexedTension, TensionFormat } from '@/lib/game/types';
 import { getSceneForState, getBreathingMoment, getCompressionLine, getAct, getTension, checkEnding, checkSurpriseEvent, checkMilestone, getTensionStakes, detectArchetype, getArchetypeBias, getArchetypeMirror, getEndingLastLine, type SurpriseEvent, type Milestone, type TensionStakes } from '@/lib/game/engine';
 import { generateNarrative } from '@/lib/ai/narrative';
 import { getLastPlay } from '@/lib/game/stats';
 import { SceneBackground } from './SceneBackground';
-import { DimBar } from './DimBar';
 
 interface GameProps {
   companyName: string;
@@ -720,74 +719,76 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           );
         })()}
 
-        {/* Dashboard — dissolves by act, hidden during fourth-wall moments */}
-        {!compressing && !surpriseEvent && !isFourthWall && (() => {
-          const viz = getDashboardVisibility(week);
-          return (
+        {/* Status line — Ive: "Seven things competing. The player should feel one."
+            Dye: "The bars are a dashboard. Dashboards are for managers."
+            One line. Company name, week, cash only when it matters. */}
+        {!compressing && !surpriseEvent && !isFourthWall && (
           <div style={{
-            background: "rgba(255,255,255,0.03)",
-            borderRadius: 20,
-            border: "1px solid rgba(255,255,255,0.06)",
-            padding: "20px 20px 16px",
-            marginBottom: 24,
+            display: "flex", justifyContent: "space-between", alignItems: "baseline",
+            marginBottom: 8,
+            padding: "0 4px",
             animation: "quickFade 0.4s ease",
-            opacity: viz.overall,
-            transition: "opacity 2s ease",
           }}>
-            {/* Header */}
-            <div style={{
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-              marginBottom: 16, paddingBottom: 14,
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
-              opacity: viz.header,
-              transition: "opacity 2s ease",
-            }}>
-              <div>
-                <div style={{
-                  fontFamily: FONTS.display, fontSize: 20, color: "#fff", fontWeight: 600,
-                }}>{companyName}</div>
-                {viz.weekCount && (
-                <div style={{
-                  fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: FONTS.mono, marginTop: 2,
-                }}>Week {week} of 24</div>
-                )}
-                {week === 8 && (
-                  <div style={{
-                    fontSize: 10, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
-                    marginTop: 2, letterSpacing: "1px",
-                  }}>the grind begins</div>
-                )}
-                {week === 18 && (
-                  <div style={{
-                    fontSize: 10, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
-                    marginTop: 2, letterSpacing: "1px",
-                  }}>the reckoning</div>
-                )}
-              </div>
-              <div style={{ textAlign: "right", opacity: viz.cash, transition: "opacity 2s ease" }}>
-                <div style={{
-                  fontSize: 18, fontWeight: 700, color: "#fff",
-                  fontFamily: FONTS.mono,
-                }}>{arr === 0 ? (
-                  <span style={{ fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.35)" }}>Pre-revenue</span>
-                ) : (
-                  <>${arr}M <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>ARR</span></>
-                )}</div>
-                <div style={{
-                  fontSize: 12, color: cash < 400 ? "rgba(248,113,113,0.9)" : "rgba(255,255,255,0.4)",
-                  fontFamily: FONTS.mono, marginTop: 2,
-                }}>${cash}K cash</div>
-              </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{
+                fontFamily: FONTS.display, fontSize: 16, color: "rgba(255,255,255,0.7)", fontWeight: 600,
+              }}>{companyName}</span>
+              {week === 8 && (
+                <span style={{
+                  fontSize: 9, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
+                  letterSpacing: "1px",
+                }}>the grind begins</span>
+              )}
+              {week === 18 && (
+                <span style={{
+                  fontSize: 9, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
+                  letterSpacing: "1px",
+                }}>the reckoning</span>
+              )}
             </div>
-
-            {/* Four dimensions */}
-            <div style={{ opacity: viz.dims, transition: "opacity 2s ease" }}>
-              <DimBar label="Company" value={dims.company} hideValue={!viz.dimValues} />
-              <DimBar label="People" value={dims.relationships} hideValue={!viz.dimValues} />
-              <DimBar label="Energy" value={dims.energy} hideValue={!viz.dimValues} />
-              <DimBar label="Ethics" value={dims.integrity} hideValue={!viz.dimValues} />
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+              {/* Cash — only shows when it matters */}
+              {(cash < 800 || arr > 0) && (
+                <span style={{
+                  fontSize: 11, fontFamily: FONTS.mono,
+                  color: cash < 400 ? "rgba(248,113,113,0.8)" : "rgba(255,255,255,0.25)",
+                  transition: "color 0.5s ease",
+                }}>
+                  {arr > 0 ? `$${arr}M` : `$${cash}K`}
+                </span>
+              )}
+              <span style={{
+                fontSize: 11, color: "rgba(255,255,255,0.2)", fontFamily: FONTS.mono,
+              }}>w{week}</span>
             </div>
           </div>
+        )}
+
+        {/* Danger signals — dimensions only surface when they're in crisis */}
+        {!compressing && !surpriseEvent && !isFourthWall && (() => {
+          const dangers = [
+            { key: 'company', label: 'Company', val: dims.company },
+            { key: 'relationships', label: 'People', val: dims.relationships },
+            { key: 'energy', label: 'Energy', val: dims.energy },
+            { key: 'integrity', label: 'Ethics', val: dims.integrity },
+          ].filter(d => d.val < 35);
+          if (dangers.length === 0) return null;
+          return (
+            <div style={{
+              display: "flex", gap: 12, justifyContent: "center",
+              marginBottom: 8,
+              animation: "quickFade 0.4s ease",
+            }}>
+              {dangers.map(d => (
+                <span key={d.key} style={{
+                  fontSize: 10, fontFamily: FONTS.mono,
+                  color: d.val < 20 ? "rgba(248,113,113,0.7)" : "rgba(253,224,71,0.5)",
+                  letterSpacing: "0.5px",
+                }}>
+                  {d.label} {d.val}
+                </span>
+              ))}
+            </div>
           );
         })()}
 
