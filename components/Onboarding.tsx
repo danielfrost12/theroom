@@ -182,7 +182,7 @@ export function Onboarding({ onStart }: OnboardingProps) {
                 fontFamily: FONTS.mono,
                 letterSpacing: "0.5px",
               }}>
-                ~10 min &middot; &infin; endings &middot; no right answers
+                ~10 min &middot; &infin; endings
               </p>
             </div>
           </>
