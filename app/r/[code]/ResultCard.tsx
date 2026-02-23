@@ -3,17 +3,9 @@
 import { ShareData } from '@/lib/share';
 import { FONTS, dimColor, weekDotColor } from '@/lib/game/constants';
 
-// Split weekLog string back into emoji array (each emoji is multi-byte)
+// Split weekLog string back into emoji array — spread handles surrogate pairs correctly
 function parseWeekLog(log: string): string[] {
-  return [...log].reduce<string[]>((acc, char) => {
-    const last = acc[acc.length - 1];
-    if (last && last.length === 1 && last.charCodeAt(0) >= 0xD800) {
-      acc[acc.length - 1] = last + char;
-    } else {
-      acc.push(char);
-    }
-    return acc;
-  }, []);
+  return [...log];
 }
 
 export function ResultCard({ data }: { data: ShareData }) {

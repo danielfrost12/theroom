@@ -39,6 +39,7 @@ export function ShareImage({
 }: ShareImageProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
+  const [shared, setShared] = useState(false);
   const accent = ENDING_ACCENTS[ending.type] || ENDING_ACCENTS.time_up;
 
   const handleDownload = useCallback(async () => {
@@ -124,12 +125,14 @@ export function ShareImage({
           // User cancelled share sheet or share failed — this is fine
         }
       } else {
-        // Desktop fallback: copy share URL to clipboard, download image
+        // Desktop fallback: copy share URL + dare text to clipboard, download image
         const dareText = nearMiss
           ? `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players.\n${nearMiss}\nCan you do better?`
           : `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players. ${ending.line}\nCan you do better?`;
         try {
           await navigator.clipboard.writeText(`${dareText}\n${shareUrl}`);
+          setShared(true);
+          setTimeout(() => setShared(false), 2500);
         } catch { /* clipboard may not be available */ }
         const link = document.createElement('a');
         link.download = `theroom-${companyName.toLowerCase().replace(/\s+/g, '-')}.png`;
@@ -460,7 +463,7 @@ export function ShareImage({
             transition: "all 0.3s ease",
           }}
         >
-          {generating ? "Generating..." : "Share"}
+          {generating ? "Generating..." : shared ? "Copied! ✓" : "Share"}
         </button>
         <button
           onClick={handleDownload}

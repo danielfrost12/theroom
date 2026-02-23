@@ -59,6 +59,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const [archetypeMirror, setArchetypeMirror] = useState<string | null>(null);
   const [peakMoment, setPeakMoment] = useState<string | null>(null);
   const [peakShown, setPeakShown] = useState(false);
+  const [selectedDot, setSelectedDot] = useState<number | null>(null);
+  const [customOutcome, setCustomOutcome] = useState<{ effects: Partial<GameDimensions>; wasCustom: boolean } | null>(null);
   const pendingContinueRef = useRef<(() => void) | null>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const usedTensionsRef = useRef<Set<number>>(new Set());
@@ -284,13 +286,14 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   };
 
   // --- HANDLE CHOICE ---
-  const handleChoice = async (choice: string, effects: Partial<GameDimensions>, isCustom = false) => {
+  const handleChoice = async (choice: string, effects: Partial<GameDimensions>, isCustom = false, showAsCustom = false) => {
     clearAllTimeouts();
     setLoading(true);
     setNarrative(null);
     setForeshadow(null);
     setRegretHint(null);
     setIsFourthWall(false);
+    setCustomOutcome((isCustom || showAsCustom) ? { effects, wasCustom: true } : null);
 
     // Earned silence: after critical Act 2/3 choices, show darkness instead of a breathing quote
     const silenceEarned = shouldEarnSilence(week, stakes, isConsequence);
@@ -440,10 +443,13 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     }
     const newArr = Math.max(0, arr + arrDelta);
 
-    // Cash burn — $2.5M seed burns ~$100K/week, scaling with team size
-    // Revenue comes from ARR (ARR/24 per week, with slight lag)
-    const weeklyBurn = 40 + Math.floor(newArr * 1.5); // burn scales with growth
-    const weeklyRevenue = Math.floor(newArr * 1000 / 24); // ARR is in $M, cash in $K
+    // Cash burn — real startup economics. $2.5M seed, ~$80-120K/week base.
+    // Burn scales with growth: more ARR = more headcount = more burn.
+    // Revenue = ARR / 52 weeks/year. ARR is in $M, cash is in $K.
+    const baseBurn = 80; // $80K/week base (rent, core team, infra)
+    const growthBurn = Math.floor(newArr * 6); // each $1M ARR adds ~$6K/week burn (sales, support, eng)
+    const weeklyBurn = baseBurn + growthBurn;
+    const weeklyRevenue = Math.floor(newArr * 1000 / 52); // correct: ARR / 52 weeks
     const newCash = Math.max(0, cash - weeklyBurn + weeklyRevenue);
 
     setDims(newDims);
@@ -524,7 +530,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     const shouldCompress = Math.random() < actTempo.compressChance && newWeek < 22 && newWeek >= (actTempo.noCompressBefore || 0);
 
     if (shouldCompress) {
-      const skipWeeks = Math.min(1 + Math.floor(Math.random() * 2), 24 - newWeek);
+      const skipWeeks = Math.min(1 + Math.floor(Math.random() * 2), Math.max(0, 24 - newWeek));
       if (skipWeeks > 0) {
         pendingContinueRef.current = () => {
           setWaitingForTap(false);
@@ -533,8 +539,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           setCompressWeeks(skipWeeks);
           setCompressMoment(getCompressionLine(newDims, newWeek, newArr, usedEvents));
           addTimeout(() => {
-            const burnPerWeek = 40 + Math.floor(newArr * 1.5);
-            const revPerWeek = Math.floor(newArr * 1000 / 24);
+            const burnPerWeek = 80 + Math.floor(newArr * 6);
+            const revPerWeek = Math.floor(newArr * 1000 / 52);
             const compressedCash = Math.max(0, newCash + skipWeeks * (revPerWeek - burnPerWeek));
             // Compression ARR: additive, matching the linear growth model. +1/week if healthy.
             const compArrPerWeek = newDims.company >= 50 ? 1 : newDims.company >= 35 ? 0.5 : -0.5;
@@ -604,8 +610,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       const aiEffects = await evaluateCustomChoice(
         text, tension?.context || text, dims, week, companyName
       );
-      // AI returned real effects — use them through the normal path (not random)
-      handleChoice(text, aiEffects as Partial<GameDimensions>, false);
+      // AI returned real effects — showAsCustom=true so player sees impact feedback
+      handleChoice(text, aiEffects as Partial<GameDimensions>, false, true);
     } catch {
       // Fallback to random if AI fails
       handleChoice(text, {}, true);
@@ -732,33 +738,93 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
               )}
             </div>
 
-            {/* Week-by-week progress bar */}
+            {/* Week-by-week progress bar — tap a dot to revisit the choice, last dot pulses */}
             {weekLog.length > 0 && (
               <div style={{
-                display: "flex", gap: 3, marginTop: 14, paddingTop: 14,
+                marginTop: 14, paddingTop: 14,
                 borderTop: "1px solid rgba(255,255,255,0.04)",
-                flexWrap: "wrap",
-                justifyContent: "center",
               }}>
-                {weekLog.map((color, i) => (
-                  <div key={i} style={{
-                    width: 12, height: 12, borderRadius: 2,
-                    background: color === "🟩" ? "rgba(74,222,128,0.6)"
+                <div style={{
+                  display: "flex", gap: 2,
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                }}>
+                  {weekLog.map((color, i) => {
+                    const isSelected = selectedDot === i;
+                    const isLast = i === weekLog.length - 1;
+                    const dotColor = color === "🟩" ? "rgba(74,222,128,0.6)"
                       : color === "🟨" ? "rgba(250,204,21,0.6)"
                       : color === "🟥" ? "rgba(248,113,113,0.6)"
                       : color === "💀" ? "rgba(248,113,113,0.9)"
                       : color === "🏆" ? "rgba(74,222,128,0.9)"
-                      : "rgba(255,255,255,0.1)",
-                    transition: "background 0.3s ease",
-                  }} />
-                ))}
-                {/* Empty slots for remaining weeks */}
-                {Array.from({ length: Math.max(0, 24 - weekLog.length) }, (_, i) => (
-                  <div key={`empty-${i}`} style={{
-                    width: 12, height: 12, borderRadius: 2,
-                    background: "rgba(255,255,255,0.04)",
-                  }} />
-                ))}
+                      : "rgba(255,255,255,0.1)";
+                    return (
+                      <div
+                        key={i}
+                        onClick={() => setSelectedDot(isSelected ? null : i)}
+                        style={{
+                          width: 8, height: 8, borderRadius: 2,
+                          background: dotColor,
+                          cursor: "pointer",
+                          transform: isSelected ? "scale(1.6)" : "scale(1)",
+                          boxShadow: isSelected ? `0 0 8px ${dotColor}` : "none",
+                          transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                          animation: isLast ? "pulse 1.5s ease-in-out infinite" : undefined,
+                        }}
+                      />
+                    );
+                  })}
+                  {/* Empty slots for remaining weeks */}
+                  {Array.from({ length: Math.max(0, 24 - weekLog.length) }, (_, i) => (
+                    <div key={`empty-${i}`} style={{
+                      width: 8, height: 8, borderRadius: 2,
+                      background: "rgba(255,255,255,0.04)",
+                    }} />
+                  ))}
+                </div>
+                {/* Selected dot detail — what happened that week */}
+                {selectedDot !== null && decisions[selectedDot] && (
+                  <div
+                    onClick={() => setSelectedDot(null)}
+                    style={{
+                      marginTop: 10,
+                      padding: "8px 12px",
+                      background: "rgba(255,255,255,0.03)",
+                      borderRadius: 8,
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      cursor: "pointer",
+                      animation: "fadeUp 0.3s ease",
+                    }}
+                  >
+                    <div style={{
+                      fontSize: 9,
+                      color: "rgba(255,255,255,0.3)",
+                      fontFamily: FONTS.mono,
+                      letterSpacing: "1px",
+                      marginBottom: 4,
+                    }}>
+                      WEEK {decisions[selectedDot].week}
+                    </div>
+                    <div style={{
+                      fontSize: 11,
+                      color: "rgba(255,255,255,0.5)",
+                      fontFamily: FONTS.body,
+                      lineHeight: 1.4,
+                    }}>
+                      {decisions[selectedDot].context.length > 60
+                        ? decisions[selectedDot].context.slice(0, 60) + "…"
+                        : decisions[selectedDot].context}
+                    </div>
+                    <div style={{
+                      fontSize: 11,
+                      color: "rgba(255,238,210,0.6)",
+                      fontFamily: FONTS.mono,
+                      marginTop: 3,
+                    }}>
+                      → {decisions[selectedDot].choice}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -971,6 +1037,48 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             }}>
               {narrative}
             </div>
+            {/* Custom choice feedback — show what the AI decided your move did */}
+            {customOutcome && customOutcome.wasCustom && (
+              <div style={{
+                marginTop: 16, paddingTop: 12,
+                borderTop: "1px solid rgba(255,255,255,0.04)",
+                opacity: 0, animation: "fadeUp 0.6s ease 0.8s forwards",
+              }}>
+                <div style={{
+                  fontSize: 9,
+                  color: "rgba(255,255,255,0.2)",
+                  fontFamily: FONTS.mono,
+                  letterSpacing: "1.5px",
+                  marginBottom: 6,
+                  textAlign: "center",
+                }}>
+                  YOUR MOVE
+                </div>
+                <div style={{
+                  display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap",
+                }}>
+                  {([
+                    { key: "company" as const, label: "Company" },
+                    { key: "relationships" as const, label: "People" },
+                    { key: "energy" as const, label: "Energy" },
+                    { key: "integrity" as const, label: "Ethics" },
+                  ]).map(({ key, label }) => {
+                    const val = customOutcome.effects[key] || 0;
+                    if (val === 0) return null;
+                    return (
+                      <span key={key} style={{
+                        fontSize: 10,
+                        fontFamily: FONTS.mono,
+                        color: val > 0 ? "rgba(74,222,128,0.6)" : "rgba(248,113,113,0.6)",
+                        letterSpacing: "0.3px",
+                      }}>
+                        {label} {val > 0 ? `+${val}` : val}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {foreshadow && (
               <div style={{
                 marginTop: 16, paddingTop: 12,

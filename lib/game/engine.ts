@@ -727,26 +727,35 @@ function applyStatePressure(t: IndexedTension, dims: GameDimensions): IndexedTen
 
 export function checkEnding(state: { week: number; cash: number; arr: number; dims: GameDimensions }): Ending | null {
   const { week, cash, arr, dims } = state;
+  // Cap display week — game cannot run past 24 weeks regardless of compression
+  const displayWeek = Math.min(week, TOTAL_WEEKS);
+
+  // TIME'S UP — hard ceiling. Must check FIRST so game never runs past 24 weeks.
+  // Even if other endings could trigger, the clock stops here.
+  if (week >= TOTAL_WEEKS) {
+    // Check for success endings even at time_up — IPO can happen on the last week
+    if (arr >= 30 && dims.integrity > 45 && dims.relationships > 35 && dims.energy > 25) {
+      return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${displayWeek} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
+    }
+    const val = Math.round(arr * 1.5);
+    return { type: "time_up", label: "TIME'S UP", emoji: "⏰", line: `${TOTAL_WEEKS} weeks. Company valued at $${val}M. The story just... stopped.` };
+  }
 
   // Grace period: no catastrophic endings before week 4. Let the player feel the game first.
   // Cash can still run out (that's math, not drama) but dimension-based deaths need room to breathe.
   if (week >= 4) {
-    if (dims.energy <= 0) return { type: "burnout", label: "BURNED OUT", emoji: "🔥", line: `Burned out in week ${week}. ${arr > 0 ? `Company was doing $${arr}M ARR without you.` : "The company never found its footing."}` };
-    if (dims.integrity <= 0) return { type: "disgraced", label: "DISGRACED", emoji: "🪦", line: `Disgraced in week ${week}. The Glassdoor reviews wrote themselves.` };
+    if (dims.energy <= 0) return { type: "burnout", label: "BURNED OUT", emoji: "🔥", line: `Burned out in week ${displayWeek}. ${arr > 0 ? `Company was doing $${arr}M ARR without you.` : "The company never found its footing."}` };
+    if (dims.integrity <= 0) return { type: "disgraced", label: "DISGRACED", emoji: "🪦", line: `Disgraced in week ${displayWeek}. The Glassdoor reviews wrote themselves.` };
   }
-  if (cash <= 0) return { type: "bankrupt", label: "BANKRUPT", emoji: "💀", line: `Bankrupt in week ${week}. ${arr > 0 ? `$${arr}M ARR wasn't enough.` : "Never got off the ground."}` };
-  if (week >= 6 && dims.relationships <= 10 && dims.company > 40) return { type: "board_removed", label: "BOARD REMOVED", emoji: "🚪", line: `Board removed you in week ${week}. ${arr > 0 ? `Company was doing $${arr}M ARR.` : ""}` };
+  if (cash <= 0) return { type: "bankrupt", label: "BANKRUPT", emoji: "💀", line: `Bankrupt in week ${displayWeek}. ${arr > 0 ? `$${arr}M ARR wasn't enough.` : "Never got off the ground."}` };
+  if (week >= 6 && dims.relationships <= 10 && dims.company > 40) return { type: "board_removed", label: "BOARD REMOVED", emoji: "🚪", line: `Board removed you in week ${displayWeek}. ${arr > 0 ? `Company was worth $${Math.round(arr / 8)}M.` : ""}` };
   // IPO: requires high ARR, late game, AND healthy dimensions. You have to earn this AND survive.
-  if (week >= 20 && arr >= 30 && dims.integrity > 45 && dims.relationships > 35 && dims.energy > 25) return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${week} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
+  if (week >= 20 && arr >= 30 && dims.integrity > 45 && dims.relationships > 35 && dims.energy > 25) return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${displayWeek} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
   // Acquisition: mid-game exit, probabilistic. Requires real traction.
   if (arr >= 15 && week >= 14) {
-    if (Math.random() < 0.15) return { type: "acquired", label: "ACQUIRED", emoji: "🤝", line: `Acquired for $${Math.round(arr * 2.2)}M in ${week} weeks.` };
+    if (Math.random() < 0.15) return { type: "acquired", label: "ACQUIRED", emoji: "🤝", line: `Acquired for $${Math.round(arr * 2.2)}M in ${displayWeek} weeks.` };
   }
-  if (cash < 200 && arr > 3) return { type: "forced_sale", label: "FORCED SALE", emoji: "📉", line: `Forced sale at $${Math.round(arr * 0.8)}M in week ${week}. Took what you could get.` };
-  if (week >= TOTAL_WEEKS) {
-    const val = Math.round(arr * 1.5);
-    return { type: "time_up", label: "TIME'S UP", emoji: "⏰", line: `${TOTAL_WEEKS} weeks. Company valued at $${val}M. The story just... stopped.` };
-  }
+  if (cash < 200 && arr > 3) return { type: "forced_sale", label: "FORCED SALE", emoji: "📉", line: `Forced sale at $${Math.round(arr * 0.8)}M in week ${displayWeek}. Took what you could get.` };
   return null;
 }
 
