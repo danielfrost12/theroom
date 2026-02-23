@@ -111,19 +111,16 @@ export function ShareImage({
         : `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players. ${ending.line}\nCan you do better?`;
 
       // Try native share first (mobile), fall back to clipboard + download (desktop)
+      // Always embed URL in text — many apps drop the `url` field when sharing with files
       let shared = false;
       if (navigator.share) {
         try {
-          const sharePayload: ShareData2 = {
-            title: `${companyName} — ${ending.label}`,
-            text: dareText,
-            url: shareUrl,
-          };
+          const textWithUrl = `${dareText}\n${shareUrl}`;
           if (navigator.canShare?.({ files: [file] })) {
-            await navigator.share({ ...sharePayload, files: [file] });
+            await navigator.share({ title: `${companyName} — ${ending.label}`, text: textWithUrl, files: [file] });
             shared = true;
           } else {
-            await navigator.share(sharePayload);
+            await navigator.share({ title: `${companyName} — ${ending.label}`, text: dareText, url: shareUrl });
             shared = true;
           }
         } catch (e) {

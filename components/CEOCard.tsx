@@ -293,72 +293,57 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
             </div>
           </div>
 
-          {/* Pivotal moments — the defining choices */}
-          {pivotalMoments.length > 0 && (
-            <div style={{
-              borderTop: "1px solid rgba(255,255,255,0.04)",
-              paddingTop: 12,
-              marginBottom: 12,
-            }}>
+          {/* Your Story — unified timeline of events, choices, and custom moves */}
+          {(() => {
+            const storyItems: { week: number; text: string }[] = [];
+            pivotalMoments.forEach(m => {
+              const weekMatch = m.match(/^Week (\d+):/);
+              storyItems.push({ week: weekMatch ? parseInt(weekMatch[1]) : 0, text: m });
+            });
+            // Add custom typed choices with context
+            customMoves.forEach(d => {
+              const briefContext = d.context.split('.')[0] || "A critical moment";
+              const choiceText = d.choice.length > 30 ? d.choice.slice(0, 27) + '...' : d.choice;
+              const alreadyTracked = storyItems.some(s => s.week === d.week && s.text.includes(choiceText.slice(0, 15)));
+              if (!alreadyTracked) {
+                storyItems.push({ week: d.week, text: `Week ${d.week}: ${choiceText} — ${briefContext.toLowerCase()}` });
+              }
+            });
+            storyItems.sort((a, b) => a.week - b.week);
+            const items = storyItems.slice(0, 5);
+            if (items.length === 0) return null;
+            return (
               <div style={{
-                fontSize: 9,
-                color: "rgba(255,255,255,0.2)",
-                fontFamily: FONTS.mono,
-                letterSpacing: "1.5px",
-                textTransform: "uppercase" as const,
-                marginBottom: 8,
-                textAlign: "center" as const,
+                borderTop: "1px solid rgba(255,255,255,0.04)",
+                paddingTop: 12,
+                marginBottom: 12,
               }}>
-                DEFINING MOMENTS
-              </div>
-              {pivotalMoments.slice(0, 3).map((m, i) => (
-                <div key={i} style={{
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.35)",
-                  fontFamily: FONTS.body,
-                  lineHeight: 1.5,
+                <div style={{
+                  fontSize: 9,
+                  color: "rgba(255,255,255,0.2)",
+                  fontFamily: FONTS.mono,
+                  letterSpacing: "1.5px",
+                  textTransform: "uppercase" as const,
+                  marginBottom: 8,
                   textAlign: "center" as const,
-                  marginBottom: 3,
                 }}>
-                  {m}
+                  YOUR STORY
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Custom moves — player's own choices and their impact */}
-          {customMoves.length > 0 && (
-            <div style={{
-              borderTop: "1px solid rgba(255,255,255,0.04)",
-              paddingTop: 12,
-              marginBottom: 12,
-            }}>
-              <div style={{
-                fontSize: 9,
-                color: "rgba(255,238,210,0.3)",
-                fontFamily: FONTS.mono,
-                letterSpacing: "1.5px",
-                textTransform: "uppercase" as const,
-                marginBottom: 8,
-                textAlign: "center" as const,
-              }}>
-                YOUR MOVES
+                {items.map((item, i) => (
+                  <div key={i} style={{
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.35)",
+                    fontFamily: FONTS.body,
+                    lineHeight: 1.5,
+                    textAlign: "center" as const,
+                    marginBottom: 3,
+                  }}>
+                    {item.text}
+                  </div>
+                ))}
               </div>
-              {customMoves.slice(0, 3).map((d, i) => (
-                <div key={i} style={{
-                  fontSize: 11,
-                  color: "rgba(255,238,210,0.4)",
-                  fontFamily: FONTS.body,
-                  fontStyle: "italic" as const,
-                  lineHeight: 1.5,
-                  textAlign: "center" as const,
-                  marginBottom: 4,
-                }}>
-                  Week {d.week}: &ldquo;{d.choice.length > 50 ? d.choice.slice(0, 47) + '...' : d.choice}&rdquo;
-                </div>
-              ))}
-            </div>
-          )}
+            );
+          })()}
 
           {/* Viral summary — the sentence people screenshot */}
           <div style={{

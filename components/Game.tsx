@@ -469,10 +469,27 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       }
     }
 
+    // Detect character departures from choices (preset "Let him go" OR custom "Fire him", "Fire Marcus", etc.)
+    const choiceLower = choice.toLowerCase();
+    const contextLower = (tension?.context || customText).toLowerCase();
+    const mentionsMarcus = contextLower.includes('marcus') || choiceLower.includes('marcus');
+    const mentionsElena = contextLower.includes('elena') || choiceLower.includes('elena');
+    const firingIntent = /\b(fire|fired|let .* go|terminate|get rid of|remove|kick out|sack)\b/i.test(choiceLower);
+    if (firingIntent && mentionsMarcus && !usedEvents.has('marcus_leaves')) {
+      setUsedEvents(prev => new Set([...prev, 'marcus_leaves']));
+    }
+    if (firingIntent && mentionsElena && !usedEvents.has('elena_quit')) {
+      setUsedEvents(prev => new Set([...prev, 'elena_quit']));
+    }
+    // Also mark "Let him go" preset choice as Marcus departure (context always mentions Marcus)
+    if (choice === 'Let him go' && mentionsMarcus && !usedEvents.has('marcus_leaves')) {
+      setUsedEvents(prev => new Set([...prev, 'marcus_leaves']));
+    }
+
     // Build list of departed characters for AI narrative continuity
     const departed: string[] = [];
-    if (usedEvents.has('elena_quit')) departed.push('Elena');
-    if (usedEvents.has('marcus_leaves')) departed.push('Marcus');
+    if (usedEvents.has('elena_quit') || (firingIntent && mentionsElena)) departed.push('Elena');
+    if (usedEvents.has('marcus_leaves') || (firingIntent && mentionsMarcus)) departed.push('Marcus');
 
     // Determine unchosen option and effects for narrative context
     const isLeftChoice = tension ? choice === tension.left : false;
