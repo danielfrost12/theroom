@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { FONTS, COLORS, TEMPO, getActTempo, shouldEarnSilence, weekDotColor } from '@/lib/game/constants';
+import { FONTS, COLORS, TEMPO, getActTempo, shouldEarnSilence, getDashboardVisibility } from '@/lib/game/constants';
 import { GameDimensions, Ending, Decision, IndexedTension, TensionFormat } from '@/lib/game/types';
 import { getSceneForState, getBreathingMoment, getCompressionLine, getAct, getTension, checkEnding, checkSurpriseEvent, checkMilestone, getTensionStakes, detectArchetype, getArchetypeBias, getArchetypeMirror, getEndingLastLine, type SurpriseEvent, type Milestone, type TensionStakes } from '@/lib/game/engine';
-import { generateNarrative } from '@/lib/ai/narrative';
+import { generateNarrative, evaluateCustomChoice } from '@/lib/ai/narrative';
 import { getLastPlay } from '@/lib/game/stats';
 import { SceneBackground } from './SceneBackground';
+import { DimBar } from './DimBar';
 
 interface GameProps {
   companyName: string;
@@ -58,6 +59,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const pendingContinueRef = useRef<(() => void) | null>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const usedTensionsRef = useRef<Set<number>>(new Set());
+  const customInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { usedTensionsRef.current = usedTensions; }, [usedTensions]);
   useEffect(() => { return () => { timeoutsRef.current.forEach(clearTimeout); }; }, []);
@@ -293,55 +295,64 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     if (!isCustom) {
       (Object.keys(effects) as (keyof GameDimensions)[]).forEach(k => {
         let delta = effects[k] || 0;
-        // Honeymoon protection: slight cushion in Act 1 — but choices still hurt
+        // Honeymoon protection: cushion in Act 1
         if (delta < 0 && currentAct === 1) {
-          delta = Math.ceil(delta * 0.85);
+          delta = Math.ceil(delta * 0.75);
         }
-        // Momentum dampening: protect dimensions that are already low
-        if (delta < 0 && newDims[k] < 30) {
-          delta = Math.ceil(delta * 0.5);
-        } else if (delta < 0 && newDims[k] < 45) {
-          delta = Math.ceil(delta * 0.7);
+        // Momentum dampening: protect dimensions already low (floor protection)
+        if (delta < 0 && newDims[k] < 25) {
+          delta = Math.ceil(delta * 0.4);
+        } else if (delta < 0 && newDims[k] < 40) {
+          delta = Math.ceil(delta * 0.6);
         }
         newDims[k] = Math.max(0, Math.min(100, newDims[k] + delta));
       });
     } else {
+      // Custom choices: modest random effects (AI evaluation happens separately if available)
       const swing = Math.random();
-      if (swing > 0.6) {
-        const lucky = ['company', 'relationships', 'energy', 'integrity'][Math.floor(Math.random() * 4)] as keyof GameDimensions;
-        newDims[lucky] = Math.min(100, newDims[lucky] + 15 + Math.floor(Math.random() * 10));
-        (Object.keys(newDims) as (keyof GameDimensions)[]).forEach(k => {
-          if (k !== lucky) newDims[k] = Math.max(0, newDims[k] - 8 - Math.floor(Math.random() * 5));
-        });
+      if (swing > 0.5) {
+        // 50% chance: creative swing — boost weakest dimension, small cost to strongest
+        const dimEntries = (Object.keys(newDims) as (keyof GameDimensions)[]).map(k => ({ k, v: newDims[k] }));
+        const weakest = dimEntries.reduce((a, b) => a.v < b.v ? a : b);
+        const strongest = dimEntries.reduce((a, b) => a.v > b.v ? a : b);
+        newDims[weakest.k] = Math.min(100, newDims[weakest.k] + 8 + Math.floor(Math.random() * 8));
+        newDims[strongest.k] = Math.max(0, newDims[strongest.k] - 3 - Math.floor(Math.random() * 4));
       } else {
+        // 50% chance: scattered — small cost across all, but never catastrophic
         (Object.keys(newDims) as (keyof GameDimensions)[]).forEach(k => {
-          newDims[k] = Math.max(0, newDims[k] - 5 - Math.floor(Math.random() * 8));
+          newDims[k] = Math.max(0, newDims[k] - 2 - Math.floor(Math.random() * 5));
         });
       }
     }
 
-    // ARR growth — realistic startup trajectory
-    // Week 1: $0 ARR. By week 24, exceptional founders might hit $10-20M.
-    // $60M+ is IPO territory. Growth compounds but starts tiny.
+    // Natural recovery — your weakest dimension heals slightly each week.
+    // Like sleep, rest, resilience. Prevents death spirals.
+    const dimKeys = Object.keys(newDims) as (keyof GameDimensions)[];
+    const weakestKey = dimKeys.reduce((a, b) => newDims[a] < newDims[b] ? a : b);
+    if (newDims[weakestKey] < 50) {
+      newDims[weakestKey] = Math.min(50, newDims[weakestKey] + 3);
+    }
+
+    // ARR growth — startup trajectory. Good play should reach $15-25M by week 24.
+    // IPO requires $25M ARR. Acquisition at $15M. Both achievable with solid play.
     const newWeek = week + 1;
     const act = getAct(newWeek);
     let arrDelta: number;
     if (act === 1) {
-      // Early stage: tiny increments. You're pre-product-market-fit.
-      if (newDims.company >= 55) arrDelta = Math.random() < 0.6 ? 1 : 0;
-      else if (newDims.company >= 35) arrDelta = Math.random() < 0.3 ? 1 : 0;
-      else arrDelta = Math.random() < 0.2 ? -1 : 0;
+      // Early stage: finding product-market fit
+      if (newDims.company >= 45) arrDelta = Math.random() < 0.7 ? 1 : 0;
+      else if (newDims.company >= 30) arrDelta = Math.random() < 0.4 ? 1 : 0;
+      else arrDelta = 0;
     } else if (act === 2) {
-      // Growth stage: acceleration possible but not guaranteed
-      const growthRate = newDims.company >= 55 ? 0.08 : newDims.company >= 40 ? 0.04 : -0.03;
+      // Growth stage: acceleration. Lower thresholds, higher caps.
+      const growthRate = newDims.company >= 50 ? 0.12 : newDims.company >= 35 ? 0.06 : 0.01;
       arrDelta = Math.round(Math.max(arr, 1) * growthRate * (0.5 + Math.random()));
-      // Cap single-week growth
-      arrDelta = Math.min(arrDelta, 4);
+      arrDelta = Math.min(arrDelta, 5);
     } else {
-      // Late stage: momentum-dependent. Big jumps possible if you earned them.
-      const growthRate = newDims.company >= 60 ? 0.10 : newDims.company >= 40 ? 0.05 : -0.05;
+      // Late stage: momentum-dependent. Big growth if you earned it.
+      const growthRate = newDims.company >= 50 ? 0.15 : newDims.company >= 35 ? 0.07 : -0.02;
       arrDelta = Math.round(Math.max(arr, 1) * growthRate * (0.5 + Math.random()));
-      arrDelta = Math.min(arrDelta, 6);
+      arrDelta = Math.min(arrDelta, 8);
     }
     const newArr = Math.max(0, arr + arrDelta);
 
@@ -501,8 +512,20 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     }
   };
 
-  const handleCustomSubmit = () => {
-    if (customText.trim()) handleChoice(customText.trim(), {}, true);
+  const handleCustomSubmit = async () => {
+    if (!customText.trim()) return;
+    const text = customText.trim();
+    // Try AI evaluation first — rewards creativity, penalizes laziness
+    try {
+      const aiEffects = await evaluateCustomChoice(
+        text, tension?.context || text, dims, week, companyName
+      );
+      // AI returned real effects — use them through the normal path (not random)
+      handleChoice(text, aiEffects as Partial<GameDimensions>, false);
+    } catch {
+      // Fallback to random if AI fails
+      handleChoice(text, {}, true);
+    }
   };
 
   // Is the tension screen active (not loading, no narrative, no overlay)?
@@ -521,6 +544,17 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showTension, choicesVisible, stakes]);
 
+  // Scroll custom input into view when mobile keyboard opens
+  useEffect(() => {
+    if (showCustom && customInputRef.current) {
+      // Small delay lets the keyboard open before scrolling
+      const id = setTimeout(() => {
+        customInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+      return () => clearTimeout(id);
+    }
+  }, [showCustom]);
+
   return (
     <SceneBackground sceneKey={sceneKey} mood={liveMood}>
       <div style={{
@@ -530,267 +564,160 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
         display: "flex", flexDirection: "column",
       }}>
 
-        {/* Lifeline — your company's heartbeat rendered as a living waveform.
-            Ive: "You should feel time running out, not count bars."
-            Dye: "The shape tells the story at a glance."
-            Chesky: "The company name should be on it. It's YOUR lifeline." */}
-        {(() => {
-          const svgW = 300;
-          const svgH = 36;
-          const pad = 8;
-          const usableW = svgW - pad * 2;
-          const stepX = usableW / 23;
-          const baseY = svgH - 8;
-          const topY = 6;
-          const weeksLeft = 24 - weekLog.length;
-          // Chesky: the future compresses as time runs out — walls closing in
-          const futureOpacity = Math.max(0.03, 0.12 - (weekLog.length / 24) * 0.09);
-
-          const points: { x: number; y: number; color: string; filled: boolean; current: boolean }[] = [];
-          for (let i = 0; i < 24; i++) {
-            const x = pad + i * stepX;
-            const isFilled = i < weekLog.length;
-            const isCurrent = i === weekLog.length;
-            let y = baseY - 2;
-            let color = "rgba(255,255,255,0.06)";
-
-            if (isFilled) {
-              const emoji = weekLog[i];
-              if (emoji === "💀") { y = topY; color = "rgba(248,113,113,0.9)"; }
-              else if (emoji === "🏆") { y = topY + 3; color = "rgba(250,204,21,0.85)"; }
-              else if (emoji === "🟥") { y = topY + 8; color = "rgba(248,113,113,0.6)"; }
-              else if (emoji === "🟨") { y = baseY - 8; color = "rgba(253,224,71,0.55)"; }
-              else { y = baseY - 4 - (i % 3) * 2; color = "rgba(134,239,172,0.5)"; }
-            } else if (isCurrent) {
-              const minDim = Math.min(dims.company, dims.relationships, dims.energy, dims.integrity);
-              y = minDim < 30 ? topY + 2 : minDim < 50 ? topY + 10 : baseY - 6;
-              color = "rgba(255,238,210,0.6)";
-            }
-            points.push({ x, y, color, filled: isFilled, current: isCurrent });
-          }
-
-          // Smooth bézier path through story points
-          const filledPoints = points.filter(p => p.filled || p.current);
-          let pathD = "";
-          if (filledPoints.length > 0) {
-            pathD = `M ${filledPoints[0].x} ${filledPoints[0].y}`;
-            for (let i = 1; i < filledPoints.length; i++) {
-              const prev = filledPoints[i - 1];
-              const curr = filledPoints[i];
-              const cpx = (prev.x + curr.x) / 2;
-              pathD += ` C ${cpx} ${prev.y}, ${cpx} ${curr.y}, ${curr.x} ${curr.y}`;
-            }
-          }
-
-          // Fill area under the curve — gradient gives depth
-          let areaPath = "";
-          if (filledPoints.length > 0) {
-            areaPath = pathD + ` L ${filledPoints[filledPoints.length - 1].x} ${baseY} L ${filledPoints[0].x} ${baseY} Z`;
-          }
-
-          // Future: dashed flatline
-          const futurePoints = points.filter(p => !p.filled && !p.current);
-          let futurePath = "";
-          if (futurePoints.length > 0) {
-            const startPt = points.find(p => p.current) || filledPoints[filledPoints.length - 1];
-            if (startPt) {
-              futurePath = `M ${startPt.x} ${baseY - 2}`;
-              futurePoints.forEach(p => { futurePath += ` L ${p.x} ${baseY - 2}`; });
-            }
-          }
-
-          const currentPt = points.find(p => p.current);
-          const pulseSpeed = dims.energy < 30 ? '1s' : dims.energy < 50 ? '1.8s' : '2.5s';
-
+        {/* Dashboard — dissolves by act, hidden during fourth-wall moments */}
+        {!compressing && !surpriseEvent && !isFourthWall && (() => {
+          const viz = getDashboardVisibility(week);
           return (
-            <div
-              aria-label={`Week ${week} of 24`}
-              style={{ marginBottom: 6, display: "flex", flexDirection: "column", alignItems: "center" }}
-            >
-              <svg
-                width={svgW} height={svgH}
-                viewBox={`0 0 ${svgW} ${svgH}`}
-                style={{ overflow: "visible" }}
-              >
-                <defs>
-                  <linearGradient id="lifeline-fill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(255,238,210,0.08)" />
-                    <stop offset="100%" stopColor="rgba(255,238,210,0)" />
-                  </linearGradient>
-                </defs>
-
-                {/* Future flatline — gets more ghostly as time runs out */}
-                {futurePath && (
-                  <path
-                    d={futurePath}
-                    fill="none"
-                    stroke={`rgba(255,255,255,${futureOpacity})`}
-                    strokeWidth={1}
-                    strokeDasharray={weeksLeft <= 5 ? "2 6" : "3 4"}
-                  />
+          <div style={{
+            background: "rgba(255,255,255,0.03)",
+            borderRadius: 20,
+            border: "1px solid rgba(255,255,255,0.06)",
+            padding: "20px 20px 16px",
+            marginBottom: 24,
+            animation: "quickFade 0.4s ease",
+            opacity: viz.overall,
+            transition: "opacity 2s ease",
+          }}>
+            {/* Header */}
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              marginBottom: 16, paddingBottom: 14,
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              opacity: viz.header,
+              transition: "opacity 2s ease",
+            }}>
+              <div>
+                <div style={{
+                  fontFamily: FONTS.display, fontSize: 20, color: "#fff", fontWeight: 600,
+                }}>{companyName}</div>
+                {viz.weekCount && (
+                <div style={{
+                  fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: FONTS.mono, marginTop: 2,
+                }}>Week {week} of 24</div>
                 )}
-
-                {/* Act dividers */}
-                {[7, 17].map(actWeek => {
-                  const x = pad + actWeek * stepX;
-                  return (
-                    <line key={actWeek}
-                      x1={x} y1={topY - 2} x2={x} y2={baseY + 2}
-                      stroke="rgba(255,255,255,0.04)" strokeWidth={1}
-                    />
-                  );
-                })}
-
-                {/* Area fill — soft gradient under the curve */}
-                {areaPath && (
-                  <path d={areaPath} fill="url(#lifeline-fill)" />
+                {week === 8 && (
+                  <div style={{
+                    fontSize: 10, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
+                    marginTop: 2, letterSpacing: "1px",
+                  }}>the grind begins</div>
                 )}
-
-                {/* The lifeline itself */}
-                {pathD && (
-                  <path
-                    d={pathD}
-                    fill="none"
-                    stroke="rgba(255,238,210,0.3)"
-                    strokeWidth={1.5}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                {week === 18 && (
+                  <div style={{
+                    fontSize: 10, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
+                    marginTop: 2, letterSpacing: "1px",
+                  }}>the reckoning</div>
                 )}
-
-                {/* Dramatic week markers */}
-                {points.filter(p => p.filled).map((p, i) => {
-                  const emoji = weekLog[i];
-                  const isDramatic = emoji === "💀" || emoji === "🏆" || emoji === "🟥";
-                  if (!isDramatic) return null;
-                  return (
-                    <circle key={i}
-                      cx={p.x} cy={p.y}
-                      r={emoji === "💀" || emoji === "🏆" ? 2.5 : 1.5}
-                      fill={p.color}
-                    />
-                  );
-                })}
-
-                {/* Current week — breathing dot with glow */}
-                {currentPt && (
-                  <>
-                    <circle cx={currentPt.x} cy={currentPt.y} r={5}
-                      fill="rgba(255,238,210,0.06)"
-                      style={{ animation: `pulse ${pulseSpeed} infinite` }}
-                    />
-                    <circle cx={currentPt.x} cy={currentPt.y} r={2}
-                      fill="rgba(255,238,210,0.6)"
-                      style={{ animation: `pulse ${pulseSpeed} infinite` }}
-                    />
-                  </>
-                )}
-
-                {/* Company name — sits at the current position, your name on your lifeline */}
-                {currentPt && weekLog.length > 0 && (
-                  <text
-                    x={currentPt.x}
-                    y={baseY + 7}
-                    textAnchor="middle"
-                    fill="rgba(255,238,210,0.15)"
-                    fontSize={7}
-                    fontFamily="'JetBrains Mono', monospace"
-                    letterSpacing={0.5}
-                  >
-                    {companyName.length > 14 ? companyName.slice(0, 14) : companyName}
-                  </text>
-                )}
-
-                {/* Weeks remaining — appears in Act 3, the walls closing in */}
-                {weeksLeft <= 6 && weeksLeft > 0 && (
-                  <text
-                    x={svgW - pad}
-                    y={baseY + 7}
-                    textAnchor="end"
-                    fill={weeksLeft <= 3 ? "rgba(248,113,113,0.3)" : "rgba(255,255,255,0.12)"}
-                    fontSize={7}
-                    fontFamily="'JetBrains Mono', monospace"
-                  >
-                    {weeksLeft}w left
-                  </text>
-                )}
-              </svg>
+              </div>
+              <div style={{ textAlign: "right", opacity: viz.cash, transition: "opacity 2s ease" }}>
+                <div style={{
+                  fontSize: 18, fontWeight: 700, color: "#fff",
+                  fontFamily: FONTS.mono,
+                }}>{arr === 0 ? (
+                  <span style={{ fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.35)" }}>Pre-revenue</span>
+                ) : (
+                  <>${arr}M <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>ARR</span></>
+                )}</div>
+                <div style={{
+                  fontSize: 12, color: cash < 400 ? "rgba(248,113,113,0.9)" : "rgba(255,255,255,0.4)",
+                  fontFamily: FONTS.mono, marginTop: 2,
+                }}>${cash}K cash</div>
+              </div>
             </div>
+
+            {/* Four dimensions — green = good, yellow = rough, red = crisis */}
+            <div style={{ opacity: viz.dims, transition: "opacity 2s ease" }}>
+              <DimBar label="Company" value={dims.company} hideValue={!viz.dimValues} />
+              <DimBar label="People" value={dims.relationships} hideValue={!viz.dimValues} />
+              <DimBar label="Energy" value={dims.energy} hideValue={!viz.dimValues} />
+              <DimBar label="Ethics" value={dims.integrity} hideValue={!viz.dimValues} />
+              {/* First-week hint: teach the player what kills them */}
+              {week === 1 && (
+                <div style={{
+                  marginTop: 8,
+                  fontSize: 10,
+                  fontFamily: FONTS.mono,
+                  color: "rgba(255,255,255,0.2)",
+                  letterSpacing: "0.5px",
+                  textAlign: "center",
+                  lineHeight: 1.7,
+                  animation: "fadeUp 1s ease 2s forwards",
+                  opacity: 0,
+                }}>
+                  If any bar hits zero, the game ends.
+                </div>
+              )}
+            </div>
+          </div>
           );
         })()}
 
-        {/* Status line — Ive: "Seven things competing. The player should feel one."
-            Dye: "The bars are a dashboard. Dashboards are for managers."
-            One line. Company name, week, cash only when it matters. */}
-        {!compressing && !surpriseEvent && !isFourthWall && (
-          <div style={{
-            display: "flex", justifyContent: "space-between", alignItems: "baseline",
-            marginBottom: 8,
-            padding: "0 4px",
-            animation: "quickFade 0.4s ease",
-          }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <span style={{
-                fontFamily: FONTS.display, fontSize: 16, color: "rgba(255,255,255,0.7)", fontWeight: 600,
-              }}>{companyName}</span>
-              {week === 8 && (
-                <span style={{
-                  fontSize: 9, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
-                  letterSpacing: "1px",
-                }}>the grind begins</span>
-              )}
-              {week === 18 && (
-                <span style={{
-                  fontSize: 9, color: "rgba(255,255,255,0.15)", fontFamily: FONTS.mono,
-                  letterSpacing: "1px",
-                }}>the reckoning</span>
-              )}
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              {/* Cash — only shows when it matters */}
-              {(cash < 800 || arr > 0) && (
-                <span style={{
-                  fontSize: 11, fontFamily: FONTS.mono,
-                  color: cash < 400 ? "rgba(248,113,113,0.8)" : "rgba(255,255,255,0.25)",
-                  transition: "color 0.5s ease",
-                }}>
-                  {arr > 0 ? `$${arr}M` : `$${cash}K`}
-                </span>
-              )}
-              <span style={{
-                fontSize: 11, color: "rgba(255,255,255,0.2)", fontFamily: FONTS.mono,
-              }}>w{week}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Danger signals — dimensions only surface when they're in crisis */}
+        {/* Critical warnings — tell the player exactly what will kill them */}
         {!compressing && !surpriseEvent && !isFourthWall && (() => {
-          const dangers = [
-            { key: 'company', label: 'Company', val: dims.company },
-            { key: 'relationships', label: 'People', val: dims.relationships },
-            { key: 'energy', label: 'Energy', val: dims.energy },
-            { key: 'integrity', label: 'Ethics', val: dims.integrity },
-          ].filter(d => d.val < 35);
-          if (dangers.length === 0) return null;
+          const warnings: { text: string; urgent: boolean }[] = [];
+          if (dims.energy <= 25 && dims.energy > 0) {
+            warnings.push({
+              text: dims.energy <= 10 ? "Energy at zero = burnout. This is your last chance." : "Energy is dropping — if it hits zero, you burn out",
+              urgent: dims.energy <= 10,
+            });
+          }
+          if (dims.integrity <= 25 && dims.integrity > 0) {
+            warnings.push({
+              text: dims.integrity <= 10 ? "Ethics at zero = disgrace. One more bad call." : "Ethics are slipping — zero means disgrace",
+              urgent: dims.integrity <= 10,
+            });
+          }
+          if (dims.relationships <= 20) {
+            warnings.push({
+              text: dims.relationships <= 10 ? "The board is meeting without you." : "People are losing faith — the board is watching",
+              urgent: dims.relationships <= 10,
+            });
+          }
+          if (cash <= 400 && cash > 0) {
+            warnings.push({
+              text: cash <= 150 ? "Cash at zero = bankrupt. Weeks left: maybe one." : "Cash is running low — $0 means bankruptcy",
+              urgent: cash <= 150,
+            });
+          }
+          if (warnings.length === 0) return null;
           return (
             <div style={{
-              display: "flex", gap: 12, justifyContent: "center",
-              marginBottom: 8,
-              animation: "quickFade 0.4s ease",
+              textAlign: "center", marginBottom: 12, marginTop: -16,
+              padding: "8px 16px",
+              background: "rgba(248,113,113,0.04)",
+              borderRadius: 8,
+              animation: warnings.some(w => w.urgent) ? "pulse 1.5s ease-in-out infinite" : "fadeUp 0.5s ease",
             }}>
-              {dangers.map(d => (
-                <span key={d.key} style={{
-                  fontSize: 10, fontFamily: FONTS.mono,
-                  color: d.val < 20 ? "rgba(248,113,113,0.7)" : "rgba(253,224,71,0.5)",
-                  letterSpacing: "0.5px",
-                }}>
-                  {d.label} {d.val}
-                </span>
+              {warnings.map((w, i) => (
+                <div key={i} style={{
+                  fontSize: 11, fontFamily: FONTS.mono,
+                  color: w.urgent ? "rgba(248,113,113,0.95)" : "rgba(248,113,113,0.65)",
+                  letterSpacing: "0.3px",
+                  marginBottom: 3,
+                  fontWeight: w.urgent ? 600 : 400,
+                }}>{w.text}</div>
               ))}
             </div>
           );
         })()}
+
+        {/* Act 3 urgency — "X weeks left" when the end is near */}
+        {!compressing && !surpriseEvent && !isFourthWall && week >= 18 && week <= 24 && (
+          <div style={{
+            textAlign: "center",
+            marginBottom: 16,
+            marginTop: -12,
+            animation: week >= 22 ? "pulse 2s ease-in-out infinite" : "fadeUp 0.5s ease",
+          }}>
+            <span style={{
+              fontSize: 11,
+              fontFamily: FONTS.mono,
+              color: week >= 22 ? "rgba(248,113,113,0.7)" : "rgba(248,160,100,0.5)",
+              letterSpacing: "1px",
+            }}>
+              {24 - week} week{24 - week !== 1 ? "s" : ""} left
+            </span>
+          </div>
+        )}
 
         {/* Ending last line — the closing shot before the endgame card */}
         {lastLine && (
@@ -1401,9 +1328,10 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             )}
 
             {showCustom && (
-              <div style={{ marginTop: 8, animation: "fadeUp 0.4s ease" }}>
+              <div style={{ marginTop: 8, paddingBottom: 200, animation: "fadeUp 0.4s ease" }}>
                 <div style={{ display: "flex", gap: 8 }}>
                   <input
+                    ref={customInputRef}
                     value={customText}
                     onChange={e => setCustomText(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleCustomSubmit()}

@@ -673,13 +673,16 @@ export function getTension(week: number, usedIndices: Set<number>, dims?: GameDi
 }
 
 // 2. State-dependent effect scaling — the same choice costs more when you're weak.
-// Choosing "ship it now" at 30 energy costs -15 energy instead of -8.
-// This means memorizing "which button to press" is useless — the math changes.
+// But also: when you're strong, your gains compound slightly. Reward good play.
 function applyStatePressure(t: IndexedTension, dims: GameDimensions): IndexedTension {
   const scale = (effect: number, dimValue: number): number => {
-    if (effect >= 0) return effect; // Only amplify costs, not gains
-    // When a dimension is below 35, negative effects are 30-60% worse
-    const vulnerability = dimValue < 35 ? 1.6 : dimValue < 50 ? 1.3 : 1.0;
+    if (effect >= 0) {
+      // Strength bonus: healthy dimensions gain a little extra (momentum)
+      const momentum = dimValue >= 60 ? 1.2 : 1.0;
+      return Math.round(effect * momentum);
+    }
+    // Vulnerability: weak dimensions take more damage, but capped at 1.3x (was 1.6x)
+    const vulnerability = dimValue < 25 ? 1.3 : dimValue < 40 ? 1.15 : 1.0;
     return Math.round(effect * vulnerability);
   };
 
@@ -706,11 +709,11 @@ export function checkEnding(state: { week: number; cash: number; arr: number; di
   }
   if (cash <= 0) return { type: "bankrupt", label: "BANKRUPT", emoji: "💀", line: `Bankrupt in week ${week}.` };
   if (week >= 6 && dims.relationships <= 10 && dims.company > 40) return { type: "board_removed", label: "BOARD REMOVED", emoji: "🚪", line: `Board removed you in week ${week}. Company was worth $${Math.round(arr / 8)}M.` };
-  if (arr >= 25 && dims.integrity > 50 && dims.relationships > 40 && dims.energy > 30) return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${week} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
-  if (arr >= 15 && week >= 10) {
-    if (Math.random() < 0.15) return { type: "acquired", label: "ACQUIRED", emoji: "🤝", line: `Acquired for $${Math.round(arr * 2.2)}M in ${week} weeks.` };
+  if (arr >= 20 && dims.integrity > 40 && dims.relationships > 30 && dims.energy > 20) return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${week} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
+  if (arr >= 10 && week >= 10) {
+    if (Math.random() < 0.20) return { type: "acquired", label: "ACQUIRED", emoji: "🤝", line: `Acquired for $${Math.round(arr * 2.2)}M in ${week} weeks.` };
   }
-  if (cash < 200 && arr > 5) return { type: "forced_sale", label: "FORCED SALE", emoji: "📉", line: `Forced sale at $${Math.round(arr * 0.8)}M in week ${week}. Took what you could get.` };
+  if (cash < 200 && arr > 3) return { type: "forced_sale", label: "FORCED SALE", emoji: "📉", line: `Forced sale at $${Math.round(arr * 0.8)}M in week ${week}. Took what you could get.` };
   if (week >= TOTAL_WEEKS) {
     const val = Math.round(arr * 1.5);
     return { type: "time_up", label: "TIME'S UP", emoji: "⏰", line: `${TOTAL_WEEKS} weeks. Company valued at $${val}M. The story just... stopped.` };

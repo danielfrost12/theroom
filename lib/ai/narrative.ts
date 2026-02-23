@@ -40,6 +40,40 @@ export async function generateEndgameNarrative(
   }
 }
 
+export async function evaluateCustomChoice(
+  customText: string, context: string, dims: GameDimensions, week: number, companyName: string
+): Promise<{ company: number; relationships: number; energy: number; integrity: number }> {
+  try {
+    const res = await fetch('/api/narrative', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'evaluate', customText, context, dims, week, companyName }),
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const data = await res.json();
+    if (data.company !== undefined) {
+      return {
+        company: Math.max(-20, Math.min(20, data.company || 0)),
+        relationships: Math.max(-20, Math.min(20, data.relationships || 0)),
+        energy: Math.max(-20, Math.min(20, data.energy || 0)),
+        integrity: Math.max(-20, Math.min(20, data.integrity || 0)),
+      };
+    }
+    return getFallbackCustomEffects();
+  } catch {
+    return getFallbackCustomEffects();
+  }
+}
+
+function getFallbackCustomEffects(): { company: number; relationships: number; energy: number; integrity: number } {
+  // Fallback: modest positive on one random dim, slight cost on energy
+  const dims = ['company', 'relationships', 'energy', 'integrity'] as const;
+  const boost = dims[Math.floor(Math.random() * dims.length)];
+  const result = { company: -3, relationships: -3, energy: -5, integrity: 0 };
+  result[boost] = 8;
+  return result;
+}
+
 export function getFallbackNarrative(choice: string, context: string): string {
   void context;
   void choice;

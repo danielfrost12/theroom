@@ -63,7 +63,9 @@ export function Onboarding({ onStart }: OnboardingProps) {
       onClick={phase >= 4 ? onStart : undefined}
       onKeyDown={phase >= 4 ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onStart(); } } : undefined}
       style={{
-        position: "fixed", inset: 0, cursor: phase >= 4 ? "pointer" : "default",
+        position: "fixed", top: "-5vh", left: 0,
+        width: "100vw", height: "calc(100dvh + 10vh)",
+        cursor: phase >= 4 ? "pointer" : "default",
         background: "#0a0a0f",
         overflow: "hidden",
         outline: "none",
@@ -73,16 +75,18 @@ export function Onboarding({ onStart }: OnboardingProps) {
     >
       {/* Warm ambient gradient — the first thing you see should feel like a room, not a void */}
       <div style={{
-        position: "absolute", inset: 0,
-        background: "radial-gradient(ellipse at 30% 80%, rgba(90,55,20,0.3) 0%, transparent 55%)",
+        position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+        width: "100%", height: "100%",
+        background: "radial-gradient(ellipse 80% 60% at 30% 75%, rgba(90,55,20,0.3) 0%, rgba(90,55,20,0.1) 40%, rgba(10,10,15,0) 70%)",
         opacity: phase >= 1 ? 1 : 0,
         transition: "opacity 3s ease",
       }} />
 
       {/* Second subtle light source — cool complement */}
       <div style={{
-        position: "absolute", inset: 0,
-        background: "radial-gradient(ellipse at 70% 20%, rgba(30,35,60,0.2) 0%, transparent 50%)",
+        position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+        width: "100%", height: "100%",
+        background: "radial-gradient(ellipse 70% 50% at 70% 20%, rgba(30,35,60,0.2) 0%, rgba(30,35,60,0.05) 40%, rgba(10,10,15,0) 65%)",
         opacity: phase >= 2 ? 1 : 0,
         transition: "opacity 4s ease",
         pointerEvents: "none",
@@ -101,7 +105,7 @@ export function Onboarding({ onStart }: OnboardingProps) {
         {/* --- FIRST-TIME PLAYER --- */}
         {!stats.isReturning && (
           <>
-            {/* Phase 1: The identity hook — make them feel like a founder before they know it's a game */}
+            {/* Phase 1: The flattery — then the dare */}
             <div style={{
               opacity: phase >= 1 ? 1 : 0,
               transform: phase >= 1 ? "translateY(0)" : "translateY(12px)",
@@ -111,14 +115,25 @@ export function Onboarding({ onStart }: OnboardingProps) {
               <div style={{
                 fontFamily: FONTS.display,
                 fontSize: "clamp(15px, 3vw, 18px)",
-                color: "rgba(255,255,255,0.6)",
+                color: "rgba(255,255,255,0.5)",
                 fontStyle: "italic",
                 fontWeight: 300,
                 lineHeight: 1.7,
                 letterSpacing: "0.3px",
-                textShadow: "0 1px 8px rgba(0,0,0,0.5)",
               }}>
-                Everyone thinks they could run a company.
+                You&apos;d make a great founder. Everyone says so.
+              </div>
+              <div style={{
+                fontFamily: FONTS.display,
+                fontSize: "clamp(28px, 7vw, 42px)",
+                color: "rgba(255,255,255,0.85)",
+                fontWeight: 600,
+                letterSpacing: "-0.5px",
+                marginTop: 8,
+                opacity: 0,
+                animation: phase >= 1 ? "fadeUp 1s ease 1.2s forwards" : "none",
+              }}>
+                Prove it.
               </div>
             </div>
 

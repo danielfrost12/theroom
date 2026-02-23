@@ -25,6 +25,30 @@ State: ${dimSummary}
 Write the consequence. 1-2 sentences. 30 words max. A flash, not a story.`;
 }
 
+function buildEvaluatePrompt(customText: string, context: string, dims: { company: number; relationships: number; energy: number; integrity: number }, week: number, companyName: string): string {
+  const dimSummary = `Company: ${dims.company}/100, Relationships: ${dims.relationships}/100, Energy: ${dims.energy}/100, Integrity: ${dims.integrity}/100`;
+  const act = week <= 7 ? 'Act 1 (Honeymoon)' : week <= 17 ? 'Act 2 (The Grind)' : 'Act 3 (The Reckoning)';
+  return `You are the game engine for "The Room," a startup CEO simulation. A player typed a CUSTOM action instead of choosing from preset options. You must judge how this action affects the company.
+
+Company: ${companyName}. Week ${week}/24. ${act}.
+Current state: ${dimSummary}
+Situation they're responding to: ${context}
+Their custom action: "${customText}"
+
+RULES FOR JUDGING — be fair, reward creativity:
+- Judge the action's RELEVANCE to the situation. Off-topic or lazy inputs (gibberish, "idk", single words) should hurt.
+- Judge STRATEGIC THINKING. Does the action address the root problem? Does it show understanding of tradeoffs?
+- Judge CREATIVITY. Novel solutions that a real founder might try should be rewarded more than obvious ones.
+- THERE IS NO SINGLE CORRECT ANSWER. Many approaches can work. Be unbiased about strategy style.
+- Effects range from -20 to +20 per dimension. Most effects should be -10 to +10.
+- Every action has TRADEOFFS. Nothing is free. A bold move might boost company but cost energy.
+- An action that ignores the situation entirely should have mostly negative effects (-5 to -10 each).
+- A thoughtful, creative action addressing the problem should have a clear positive (+8 to +15) on the most relevant dimension, with realistic costs elsewhere.
+
+Return ONLY a JSON object with four numbers, no explanation:
+{"company": X, "relationships": X, "energy": X, "integrity": X}`;
+}
+
 function buildEndgamePrompt(ending: { type: string; line: string }, companyName: string, decisions: { week: number; context: string; choice: string }[], dims: { company: number; relationships: number; energy: number; integrity: number }): string {
   const decisionSummary = decisions.slice(-8).map(d => `Week ${d.week}: "${d.context}" → chose "${d.choice}"`).join("\n");
   return `You are the narrator of "The Room," a startup simulation. Write in second person. "You built something" not "The CEO built something."
@@ -66,6 +90,52 @@ export async function POST(request: NextRequest) {
   } else if (type === 'endgame') {
     const { ending, companyName, decisions, dims } = body;
     prompt = buildEndgamePrompt(ending, companyName, decisions, dims);
+  } else if (type === 'evaluate') {
+    // AI-judged custom choice: evaluate player's creative input and return dimension effects
+    const { customText, context, dims, week, companyName } = body;
+    const evalPrompt = buildEvaluatePrompt(customText, context, dims, week, companyName);
+
+    try {
+      const res = await fetch(ANTHROPIC_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 100,
+          messages: [{ role: 'user', content: evalPrompt }],
+        }),
+      });
+
+      if (!res.ok) {
+        return NextResponse.json({ company: 0, relationships: 0, energy: -3, integrity: 0 });
+      }
+
+      const data = await res.json() as { content?: { text?: string }[] };
+      const text = data.content?.map((i) => i.text || '').join('') || '';
+
+      // Parse JSON from the response
+      const jsonMatch = text.match(/\{[^}]+\}/);
+      if (jsonMatch) {
+        try {
+          const effects = JSON.parse(jsonMatch[0]);
+          return NextResponse.json({
+            company: Math.max(-20, Math.min(20, effects.company || 0)),
+            relationships: Math.max(-20, Math.min(20, effects.relationships || 0)),
+            energy: Math.max(-20, Math.min(20, effects.energy || 0)),
+            integrity: Math.max(-20, Math.min(20, effects.integrity || 0)),
+          });
+        } catch {
+          return NextResponse.json({ company: 0, relationships: 0, energy: -3, integrity: 0 });
+        }
+      }
+      return NextResponse.json({ company: 0, relationships: 0, energy: -3, integrity: 0 });
+    } catch {
+      return NextResponse.json({ company: 0, relationships: 0, energy: -3, integrity: 0 });
+    }
   } else {
     return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
   }

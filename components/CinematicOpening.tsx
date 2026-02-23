@@ -315,99 +315,103 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
             maxWidth: 440, width: "100%",
             animation: "fadeUp 1s ease",
           }}>
-            {/* The naming moment — feels like writing on a whiteboard, not filling a form */}
             <div style={{
               padding: "0 8px",
               textAlign: "center",
             }}>
+              {/* The prompt — not instructions, a statement */}
               <div style={{
                 fontFamily: FONTS.display,
-                fontSize: "clamp(15px, 3vw, 17px)",
-                color: "rgba(255,255,255,0.5)",
-                fontStyle: "italic",
+                fontSize: "clamp(14px, 3vw, 16px)",
+                color: "rgba(255,255,255,0.35)",
                 fontWeight: 300,
                 lineHeight: 1.7,
-                marginBottom: 40,
+                marginBottom: 48,
+                letterSpacing: "0.3px",
               }}>
                 That was one decision. You&apos;ll make twenty-three more.
               </div>
 
-              {/* The input — large, breathing, feels like naming something real */}
-              <div style={{ marginBottom: 12 }}>
+              {/* Label — appears above the input like a whisper */}
+              <div style={{
+                fontSize: 10,
+                color: "rgba(255,255,255,0.2)",
+                fontFamily: FONTS.mono,
+                letterSpacing: "2px",
+                textTransform: "uppercase",
+                marginBottom: 16,
+              }}>
+                {companyName.trim() ? "Your company" : "What will you build?"}
+              </div>
+
+              {/* The input — writing on glass. No placeholder. Just a blinking cursor and silence. */}
+              <div style={{ marginBottom: 12, position: "relative" }}>
                 <input
                   id="company-name"
                   value={companyName}
                   onChange={e => setCompanyName(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleStart()}
-                  placeholder="Name your company"
                   autoFocus
                   maxLength={28}
+                  autoComplete="off"
+                  autoCapitalize="words"
                   style={{
                     background: "transparent",
                     border: "none",
-                    borderBottom: "1px solid rgba(255,255,255,0.15)",
+                    borderBottom: `1px solid ${companyName.trim() ? "rgba(255,238,210,0.25)" : "rgba(255,255,255,0.08)"}`,
                     padding: "12px 0",
                     width: "100%",
-                    maxWidth: 320,
-                    fontSize: "clamp(24px, 6vw, 32px)",
+                    maxWidth: 340,
+                    fontSize: "clamp(26px, 7vw, 36px)",
                     color: "#fff",
                     textAlign: "center",
                     fontFamily: FONTS.display,
                     fontWeight: 600,
                     letterSpacing: "-0.5px",
                     outline: "none",
-                    transition: "border-color 0.4s ease",
-                    caretColor: "rgba(255,238,210,0.6)",
+                    transition: "border-color 0.8s ease",
+                    caretColor: "rgba(255,238,210,0.5)",
                   }}
-                  onFocus={e => e.currentTarget.style.borderColor = "rgba(255,238,210,0.3)"}
-                  onBlur={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"}
                 />
               </div>
 
-              {/* The button — only visible when they've named it */}
+              {/* The commitment — fades in when the name exists */}
               <div style={{
                 opacity: companyName.trim() ? 1 : 0,
-                transform: companyName.trim() ? "translateY(0)" : "translateY(8px)",
-                transition: "all 0.5s ease",
-                marginTop: 32,
+                transform: companyName.trim() ? "translateY(0)" : "translateY(12px)",
+                transition: "all 0.6s ease",
+                marginTop: 40,
               }}>
                 <button
                   onClick={handleStart}
                   disabled={!companyName.trim()}
                   style={{
                     background: "transparent",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    color: "rgba(255,255,255,0.7)",
-                    padding: "14px 44px",
-                    fontSize: 15,
+                    border: "none",
+                    color: COLORS.warm,
+                    padding: "16px 48px",
+                    fontSize: 16,
                     fontWeight: 500,
-                    borderRadius: 50,
                     cursor: companyName.trim() ? "pointer" : "default",
                     fontFamily: FONTS.body,
                     transition: "all 0.4s ease",
-                    letterSpacing: "0.3px",
+                    letterSpacing: "0.5px",
                   }}
                   onMouseEnter={e => {
-                    if (companyName.trim()) {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
-                      e.currentTarget.style.color = "#fff";
-                    }
+                    if (companyName.trim()) e.currentTarget.style.color = COLORS.warmHover;
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.background = "transparent";
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
-                    e.currentTarget.style.color = "rgba(255,255,255,0.7)";
+                    e.currentTarget.style.color = COLORS.warm;
                   }}
                 >
-                  Begin
+                  Begin &rarr;
                 </button>
                 <div style={{
                   fontSize: 11,
-                  color: "rgba(255,255,255,0.2)",
-                  marginTop: 12,
+                  color: "rgba(255,255,255,0.15)",
+                  marginTop: 8,
                   fontFamily: FONTS.mono,
-                  letterSpacing: "0.5px",
+                  letterSpacing: "1px",
                 }}>
                   24 weeks &middot; no going back
                 </div>
