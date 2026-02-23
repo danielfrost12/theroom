@@ -42,10 +42,21 @@ export default function Page() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
-  // When the hook's screen changes externally (e.g. hydration), sync
+  // When the hook's screen changes externally (e.g. hydration), sync.
+  // Guard against unrecoverable states — if we can't restore the screen, go back to start.
   useEffect(() => {
+    if (screen === 'endgame' && !endData) {
+      // endData isn't persisted — can't show endgame without it
+      reset();
+      return;
+    }
+    if ((screen === 'game' || screen === 'cinema') && !companyName && hydrated) {
+      // Mid-game reload with no company name — can't recover
+      reset();
+      return;
+    }
     setActiveScreen(screen);
-  }, [screen]);
+  }, [screen, endData, companyName, hydrated, reset]);
 
   const transitionTo = (action: () => void) => {
     setFading(true);
