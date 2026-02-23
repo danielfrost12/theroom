@@ -63,30 +63,27 @@ export function Onboarding({ onStart }: OnboardingProps) {
       onClick={phase >= 4 ? onStart : undefined}
       onKeyDown={phase >= 4 ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onStart(); } } : undefined}
       style={{
-        position: "fixed", top: "-5vh", left: 0,
-        width: "100vw", height: "calc(100dvh + 10vh)",
+        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
         cursor: phase >= 4 ? "pointer" : "default",
-        background: "#0a0a0f",
+        background: "linear-gradient(to bottom, #0a0a0f 0%, #12100a 100%)",
         overflow: "hidden",
         outline: "none",
         WebkitTapHighlightColor: "transparent",
         touchAction: "manipulation",
       }}
     >
-      {/* Warm ambient gradient — the first thing you see should feel like a room, not a void */}
+      {/* Warm ambient gradient */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-        width: "100%", height: "100%",
-        background: "radial-gradient(ellipse 80% 60% at 30% 75%, rgba(90,55,20,0.3) 0%, rgba(90,55,20,0.1) 40%, rgba(10,10,15,0) 70%)",
+        background: "radial-gradient(ellipse 80% 60% at 30% 75%, rgba(90,55,20,0.3) 0%, rgba(90,55,20,0.1) 40%, transparent 70%)",
         opacity: phase >= 1 ? 1 : 0,
         transition: "opacity 3s ease",
       }} />
 
-      {/* Second subtle light source — cool complement */}
+      {/* Second subtle light source */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-        width: "100%", height: "100%",
-        background: "radial-gradient(ellipse 70% 50% at 70% 20%, rgba(30,35,60,0.2) 0%, rgba(30,35,60,0.05) 40%, rgba(10,10,15,0) 65%)",
+        background: "radial-gradient(ellipse 70% 50% at 70% 20%, rgba(30,35,60,0.2) 0%, rgba(30,35,60,0.05) 40%, transparent 65%)",
         opacity: phase >= 2 ? 1 : 0,
         transition: "opacity 4s ease",
         pointerEvents: "none",
@@ -183,6 +180,20 @@ export function Onboarding({ onStart }: OnboardingProps) {
                 letterSpacing: "0.5px",
               }}>
                 ~10 min &middot; &infin; endings
+              </p>
+              {/* Social proof — one stat that creates FOMO */}
+              <p style={{
+                fontSize: 11,
+                color: "rgba(255,255,255,0.18)",
+                fontWeight: 400,
+                marginTop: 12,
+                lineHeight: 1.4,
+                fontFamily: FONTS.mono,
+                letterSpacing: "0.5px",
+                opacity: 0,
+                animation: phase >= 3 ? "fadeUp 1s ease 0.8s forwards" : "none",
+              }}>
+                {stats.ipoRate} of players IPO
               </p>
             </div>
           </>
