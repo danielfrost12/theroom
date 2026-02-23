@@ -330,16 +330,26 @@ export function Onboarding({ onStart }: OnboardingProps) {
           </>
         )}
 
-        {/* Phase 4: Entry prompt — just a breathing dot. The restraint IS the design. */}
+        {/* Phase 4: Entry prompt — breathing dot + subtle hint */}
         <div style={{
           opacity: phase >= 4 ? 1 : 0,
           transition: "opacity 2s ease",
+          display: "flex", alignItems: "center", gap: 10,
+          marginTop: 8,
         }}>
           <div style={{
             width: 6, height: 6, borderRadius: "50%",
             background: "rgba(255,255,255,0.4)",
             animation: "softPulse 4s ease-in-out infinite",
           }} />
+          <div style={{
+            fontSize: 11,
+            color: "rgba(255,255,255,0.15)",
+            fontFamily: FONTS.mono,
+            letterSpacing: "0.5px",
+          }}>
+            tap anywhere
+          </div>
         </div>
       </div>
     </div>
