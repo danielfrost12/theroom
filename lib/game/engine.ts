@@ -410,7 +410,25 @@ export function getSceneForState(dims: GameDimensions, week: number): string {
   return "apartment_night";
 }
 
-export function getBreathingMoment(dims: GameDimensions, week?: number): string {
+// Character names that may have left — filter lines referencing absent characters
+const CHARACTER_PATTERNS: Record<string, RegExp> = {
+  elena_quit: /Elena/i,
+  marcus_leaves: /Marcus/i,
+};
+
+function filterByGameState(lines: string[], usedEvents?: Set<string>): string[] {
+  if (!usedEvents || usedEvents.size === 0) return lines;
+  const filtered = lines.filter(line => {
+    for (const [eventKey, pattern] of Object.entries(CHARACTER_PATTERNS)) {
+      if (usedEvents.has(eventKey) && pattern.test(line)) return false;
+    }
+    return true;
+  });
+  // Always return at least one line — fallback to full pool if filtering removes everything
+  return filtered.length > 0 ? filtered : lines;
+}
+
+export function getBreathingMoment(dims: GameDimensions, week?: number, usedEvents?: Set<string>): string {
   const avg = (dims.company + dims.relationships + dims.energy + dims.integrity) / 4;
   const act = week ? getAct(week) : 1;
 
@@ -434,12 +452,15 @@ export function getBreathingMoment(dims: GameDimensions, week?: number): string 
     else if (avg > 30) pool = BREATHING_MOMENTS.bad;
     else pool = BREATHING_MOMENTS.crisis;
   }
+
+  // Filter out lines referencing characters who have left
+  pool = filterByGameState(pool, usedEvents);
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
 // --- COMPRESSION SUMMARIES ---
 // One line per skipped week, keyed to game state. Not random — specific.
-export function getCompressionLine(dims: GameDimensions, week: number, arr: number): string {
+export function getCompressionLine(dims: GameDimensions, week: number, arr: number, usedEvents?: Set<string>): string {
   const act = getAct(week);
   const avg = (dims.company + dims.relationships + dims.energy + dims.integrity) / 4;
 
@@ -460,6 +481,9 @@ export function getCompressionLine(dims: GameDimensions, week: number, arr: numb
 
   // ARR milestone override
   if (arr > 30 && act >= 2) pool = COMPRESSION_LINES.momentum;
+
+  // Filter out lines referencing characters who have left
+  pool = filterByGameState(pool, usedEvents);
 
   return pool[Math.floor(Math.random() * pool.length)];
 }

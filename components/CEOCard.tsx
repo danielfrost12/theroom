@@ -2,7 +2,7 @@
 
 import { FONTS, COLORS, dimColor, weekDotColor } from '@/lib/game/constants';
 import { Ending, GameDimensions } from '@/lib/game/types';
-import { getPlayCount, getBestValuation } from '@/lib/game/stats';
+import { getPlayCount, getBestValuation, getCollectionStats } from '@/lib/game/stats';
 import { ShareImage } from './ShareImage';
 
 interface CEOCardProps {
@@ -380,6 +380,60 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
         </div>
       </div>
 
+      {/* Collection progress — Zeigarnik effect: unfinished business drives replay */}
+      {(() => {
+        const collection = getCollectionStats();
+        const hasProgress = collection.archetypesCollected.length > 0 || collection.endingsCollected.length > 0;
+        if (!hasProgress) return null;
+        return (
+          <div style={{
+            borderTop: "1px solid rgba(255,255,255,0.04)",
+            paddingTop: 16,
+            marginTop: 4,
+          }}>
+            {/* Archetypes */}
+            {collection.archetypesRemaining.length > 0 && (
+              <div style={{ marginBottom: 10 }}>
+                <div style={{
+                  fontSize: 9, fontFamily: FONTS.mono, color: "rgba(255,255,255,0.18)",
+                  letterSpacing: "1.5px", marginBottom: 6, textAlign: "center" as const,
+                }}>
+                  {collection.archetypesCollected.length} / 7 ARCHETYPES
+                </div>
+                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" as const, justifyContent: "center" }}>
+                  {collection.archetypesCollected.map(a => (
+                    <span key={a} style={{
+                      fontSize: 9, fontFamily: FONTS.mono,
+                      color: "rgba(255,238,210,0.45)",
+                      padding: "2px 7px", borderRadius: 3,
+                      background: "rgba(255,238,210,0.06)",
+                    }}>{a.replace('The ', '')}</span>
+                  ))}
+                  {collection.archetypesRemaining.slice(0, 3).map((_, i) => (
+                    <span key={`u-${i}`} style={{
+                      fontSize: 9, fontFamily: FONTS.mono,
+                      color: "rgba(255,255,255,0.1)",
+                      padding: "2px 7px", borderRadius: 3,
+                      border: "1px dashed rgba(255,255,255,0.06)",
+                    }}>?</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Endings */}
+            {collection.endingsRemaining.length > 0 && (
+              <div style={{
+                fontSize: 10, fontFamily: FONTS.mono,
+                color: "rgba(255,255,255,0.15)",
+                textAlign: "center" as const,
+              }}>
+                {collection.endingsCollected.length} / 8 endings discovered
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Share + Play Again actions */}
       <div style={{ marginTop: 32 }}>
         <ShareImage
@@ -391,26 +445,43 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
           headline={headline}
           archetype={archetype}
           pivotalMoments={pivotalMoments}
+          percentile={percentile}
+          nearMiss={nearMiss}
         />
 
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
+        {/* Play Again — warm, answers the haunting question. Chesky: the button should feel like a dare, not a reset. */}
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
           <button
             onClick={onPlayAgain}
             style={{
-              background: "transparent",
-              border: "none",
-              color: "rgba(255,255,255,0.35)",
-              padding: "14px 28px",
-              fontSize: 14,
+              background: "rgba(255,238,210,0.06)",
+              border: "1px solid rgba(255,238,210,0.1)",
+              color: "rgba(255,238,210,0.6)",
+              padding: "16px 32px",
+              fontSize: 15,
+              fontWeight: 500,
               borderRadius: 50,
               cursor: "pointer",
-              fontFamily: FONTS.body,
-              transition: "color 0.3s ease",
+              fontFamily: FONTS.display,
+              transition: "all 0.3s ease",
+              letterSpacing: "0.3px",
             }}
-            onMouseEnter={e => { e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.35)"; }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = "rgba(255,238,210,0.12)";
+              e.currentTarget.style.color = "rgba(255,238,210,0.9)";
+              e.currentTarget.style.borderColor = "rgba(255,238,210,0.2)";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = "rgba(255,238,210,0.06)";
+              e.currentTarget.style.color = "rgba(255,238,210,0.6)";
+              e.currentTarget.style.borderColor = "rgba(255,238,210,0.1)";
+            }}
           >
-            Play Again
+            {ending.type === "burnout" || ending.type === "bankrupt" || ending.type === "disgraced"
+              ? "What if you hadn\u2019t?"
+              : ending.type === "ipo" || ending.type === "acquired"
+                ? "Could you do it cleaner?"
+                : "Again."}
           </button>
         </div>
       </div>

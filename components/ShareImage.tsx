@@ -14,6 +14,8 @@ interface ShareImageProps {
   headline: string;
   archetype: string;
   pivotalMoments: string[];
+  percentile: number;
+  nearMiss: string | null;
 }
 
 // Web Share API payload type
@@ -33,7 +35,7 @@ const ENDING_ACCENTS: Record<string, { primary: string; glow: string }> = {
 
 
 export function ShareImage({
-  ending, companyName, valuation, weekLog, dims, headline, archetype, pivotalMoments
+  ending, companyName, valuation, weekLog, dims, headline, archetype, pivotalMoments, percentile, nearMiss
 }: ShareImageProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
@@ -103,9 +105,13 @@ export function ShareImage({
       const file = new File([blob], 'theroom.png', { type: 'image/png' });
 
       if (navigator.share) {
+        // Specific dare — near-miss makes the share personal and competitive
+        const dareText = nearMiss
+          ? `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players.\n${nearMiss}\nCan you do better?`
+          : `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players. ${ending.line}\nCan you do better?`;
         const sharePayload: ShareData2 = {
           title: `${companyName} — ${ending.label}`,
-          text: `I built ${companyName}. ${weekLog.length} weeks. ${ending.line}\nCan you do better?`,
+          text: dareText,
           url: shareUrl,
         };
         try {
@@ -119,8 +125,11 @@ export function ShareImage({
         }
       } else {
         // Desktop fallback: copy share URL to clipboard, download image
+        const dareText = nearMiss
+          ? `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players.\n${nearMiss}\nCan you do better?`
+          : `I built ${companyName}. ${weekLog.length} weeks. Better than ${percentile}% of players. ${ending.line}\nCan you do better?`;
         try {
-          await navigator.clipboard.writeText(`I built ${companyName}. ${weekLog.length} weeks. ${ending.line}\nCan you do better?\n${shareUrl}`);
+          await navigator.clipboard.writeText(`${dareText}\n${shareUrl}`);
         } catch { /* clipboard may not be available */ }
         const link = document.createElement('a');
         link.download = `theroom-${companyName.toLowerCase().replace(/\s+/g, '-')}.png`;
@@ -132,7 +141,7 @@ export function ShareImage({
     } finally {
       setGenerating(false);
     }
-  }, [companyName, ending, valuation, weekLog, dims, headline, generating]);
+  }, [companyName, ending, valuation, weekLog, dims, headline, generating, percentile, nearMiss]);
 
   return (
     <>
@@ -280,10 +289,40 @@ export function ShareImage({
                 color: "rgba(255,255,255,0.25)",
                 letterSpacing: "1.5px",
                 fontFamily: "'JetBrains Mono', monospace",
-                marginBottom: 32,
+                marginBottom: 8,
               }}>
                 FINAL VALUATION
               </div>
+
+              {/* Percentile — social comparison that drives shares */}
+              <div style={{
+                fontSize: 11,
+                color: percentile >= 80
+                  ? "rgba(134,239,172,0.7)"
+                  : percentile >= 50
+                    ? "rgba(255,255,255,0.35)"
+                    : "rgba(248,113,113,0.6)",
+                fontFamily: "'JetBrains Mono', monospace",
+                letterSpacing: "0.5px",
+                marginBottom: nearMiss ? 6 : 28,
+              }}>
+                Better than {percentile}% of players
+              </div>
+
+              {/* Near-miss — the sting that makes people share */}
+              {nearMiss && (
+                <div style={{
+                  fontSize: 10,
+                  color: "rgba(248,113,113,0.5)",
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: "0.3px",
+                  lineHeight: 1.4,
+                  maxWidth: 300,
+                  marginBottom: 28,
+                }}>
+                  {nearMiss}
+                </div>
+              )}
             </div>
 
             {/* Journey strip — colored dots */}

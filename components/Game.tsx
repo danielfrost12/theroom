@@ -45,6 +45,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const [compressMoment, setCompressMoment] = useState<string>("");
   const [waitingForTap, setWaitingForTap] = useState(false);
   const [foreshadow, setForeshadow] = useState<string | null>(null);
+  const [regretHint, setRegretHint] = useState<string | null>(null);
   const [isConsequence, setIsConsequence] = useState(false);
   const [stakes, setStakes] = useState<TensionStakes>('medium');
   const [surpriseEvent, setSurpriseEvent] = useState<SurpriseEvent | null>(null);
@@ -56,6 +57,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const [isFourthWall, setIsFourthWall] = useState(false);
   const [lastLine, setLastLine] = useState<string | null>(null);
   const [archetypeMirror, setArchetypeMirror] = useState<string | null>(null);
+  const [peakMoment, setPeakMoment] = useState<string | null>(null);
+  const [peakShown, setPeakShown] = useState(false);
   const pendingContinueRef = useRef<(() => void) | null>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const usedTensionsRef = useRef<Set<number>>(new Set());
@@ -164,6 +167,31 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
 
   // --- ADVANCE TO NEXT TENSION ---
   const advanceToNextTension = (w: number, d: GameDimensions, c: number, a: number, decs: Decision[], wLog: string[]) => {
+    // Peak-End Rule (Kahneman): One designed peak moment in Act 2 (week 13).
+    // Full-screen. Intimate. Not a question about the company. A question about the person playing.
+    if (w === 13 && !peakShown) {
+      setPeakShown(true);
+      const avg = (d.company + d.relationships + d.energy + d.integrity) / 4;
+      const peakLine = avg > 55
+        ? "Halfway. You\u2019re still standing. Was it supposed to feel like this?"
+        : d.energy < 35
+          ? "Halfway. Your body knows the answer even if you don\u2019t."
+          : d.relationships < 35
+            ? "Halfway. Look around the room. Who\u2019s still here?"
+            : "Halfway. Is this the story you meant to write?";
+      setPeakMoment(peakLine);
+      setNarrative(null);
+      setSurpriseEvent(null);
+      setMilestone(null);
+      setCompressing(false);
+      setShowBreathing(false);
+      addTimeout(() => {
+        setPeakMoment(null);
+        loadNextTension(w, d, c, decs);
+      }, 4500); // Holds for 4.5 seconds — long enough to feel it
+      return;
+    }
+
     // Check for milestone
     const ms = checkMilestone({ week: w, dims: d, arr: a, cash: c }, usedMilestones);
     if (ms) {
@@ -261,6 +289,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     setLoading(true);
     setNarrative(null);
     setForeshadow(null);
+    setRegretHint(null);
     setIsFourthWall(false);
 
     // Earned silence: after critical Act 2/3 choices, show darkness instead of a breathing quote
@@ -275,7 +304,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       setShowBreathing(false);
     } else if (!silenceEarned) {
       setShowBreathing(true);
-      setBreathingMoment(getBreathingMoment(dims, week));
+      setBreathingMoment(getBreathingMoment(dims, week, usedEvents));
     } else {
       // Void: just darkness. No text. The choice is the content.
       setShowBreathing(true);
@@ -287,6 +316,31 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       const isLeft = choice === tension.left;
       const shadow = isLeft ? tension.leftForeshadow : tension.rightForeshadow;
       if (shadow) setForeshadow(shadow);
+
+      // Regret loop — show the cost of the unchosen path (one dimension only).
+      // "The other choice would have..." — creates the "what if" that drives replay.
+      // Only show in Act 2+ and not on forced choices — let Act 1 be pure.
+      const unchosen = isLeft ? tension.rightEffect : tension.leftEffect;
+      const unchosenLabel = isLeft ? tension.right : tension.left;
+      const dimLabelsRegret: Record<string, string> = { company: 'Company', relationships: 'People', energy: 'Energy', integrity: 'Ethics' };
+      const currentAct2 = getAct(week);
+      if (currentAct2 >= 2 && tension.format !== 'forced') {
+        // Find the biggest positive effect in the unchosen path — what you missed
+        const dimKeys2 = ['company', 'relationships', 'energy', 'integrity'] as const;
+        let bestGain = 0;
+        let bestDim = '';
+        for (const k of dimKeys2) {
+          const val = unchosen[k] || 0;
+          if (val > bestGain) { bestGain = val; bestDim = k; }
+        }
+        if (bestGain >= 5 && bestDim) {
+          setRegretHint(`"${unchosenLabel}" would have given +${bestGain} ${dimLabelsRegret[bestDim]}.`);
+        } else {
+          setRegretHint(null);
+        }
+      } else {
+        setRegretHint(null);
+      }
     }
 
     // Apply effects — LOSS AVERSION: first plays have LESS protection.
@@ -457,7 +511,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           setNarrative(null);
           setCompressing(true);
           setCompressWeeks(skipWeeks);
-          setCompressMoment(getCompressionLine(newDims, newWeek, newArr));
+          setCompressMoment(getCompressionLine(newDims, newWeek, newArr, usedEvents));
           addTimeout(() => {
             const burnPerWeek = 40 + Math.floor(newArr * 1.5);
             const revPerWeek = Math.floor(newArr * 1000 / 24);
@@ -539,7 +593,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   };
 
   // Is the tension screen active (not loading, no narrative, no overlay)?
-  const showTension = !!tension && !loading && !narrative && !compressing && !surpriseEvent && !milestone && !showBreathing;
+  const showTension = !!tension && !loading && !narrative && !compressing && !surpriseEvent && !milestone && !showBreathing && !peakMoment;
 
   // Delay choices so the player must read the context before acting.
   // Stakes-based: higher stakes = longer reading pause.
@@ -782,6 +836,36 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           </div>
         )}
 
+        {/* Peak moment — Kahneman peak-end rule: one designed emotional peak in Act 2 */}
+        {peakMoment && (
+          <div style={{
+            flex: 1, display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            minHeight: "60dvh",
+            padding: "0 32px",
+            animation: "fadeUp 2s ease",
+          }}>
+            <div style={{
+              fontFamily: FONTS.display,
+              fontSize: "clamp(20px, 5vw, 28px)",
+              color: "rgba(255,238,220,0.55)",
+              fontStyle: "italic",
+              lineHeight: 1.7,
+              textAlign: "center",
+              maxWidth: 340,
+              fontWeight: 300,
+            }}>
+              {peakMoment}
+            </div>
+            <div style={{
+              marginTop: 32,
+              width: 24, height: 1,
+              background: "rgba(255,255,255,0.08)",
+              animation: "pulse 3s ease-in-out infinite",
+            }} />
+          </div>
+        )}
+
         {/* Breathing moment / Earned silence */}
         {showBreathing && (
           earnedSilence ? (
@@ -878,6 +962,22 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                   fontStyle: "italic", fontFamily: FONTS.display, lineHeight: 1.6,
                 }}>
                   {foreshadow}
+                </div>
+              </div>
+            )}
+            {/* Regret loop — the path not taken. One quiet line. */}
+            {regretHint && (
+              <div style={{
+                marginTop: foreshadow ? 8 : 16,
+                paddingTop: foreshadow ? 0 : 12,
+                borderTop: foreshadow ? "none" : "1px solid rgba(255,255,255,0.03)",
+                opacity: 0, animation: "fadeUp 0.6s ease 1.8s forwards",
+              }}>
+                <div style={{
+                  fontSize: 11, color: "rgba(255,255,255,0.15)",
+                  fontFamily: FONTS.mono, letterSpacing: "0.3px",
+                }}>
+                  {regretHint}
                 </div>
               </div>
             )}
