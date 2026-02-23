@@ -710,7 +710,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                 <div style={{
                   fontSize: 12, color: cash < 400 ? "rgba(248,113,113,0.9)" : "rgba(255,255,255,0.4)",
                   fontFamily: FONTS.mono, marginTop: 2,
-                }}>${cash}K cash</div>
+                }}>{cash >= 1000 ? `$${(cash / 1000).toFixed(1)}M` : `$${cash}K`} cash</div>
               </div>
             </div>
 

@@ -748,7 +748,7 @@ export function checkEnding(state: { week: number; cash: number; arr: number; di
     if (dims.integrity <= 0) return { type: "disgraced", label: "DISGRACED", emoji: "🪦", line: `Disgraced in week ${displayWeek}. The Glassdoor reviews wrote themselves.` };
   }
   if (cash <= 0) return { type: "bankrupt", label: "BANKRUPT", emoji: "💀", line: `Bankrupt in week ${displayWeek}. ${arr > 0 ? `$${arr}M ARR wasn't enough.` : "Never got off the ground."}` };
-  if (week >= 6 && dims.relationships <= 10 && dims.company > 40) return { type: "board_removed", label: "BOARD REMOVED", emoji: "🚪", line: `Board removed you in week ${displayWeek}. ${arr > 0 ? `Company was worth $${Math.round(arr / 8)}M.` : ""}` };
+  if (week >= 6 && dims.relationships <= 10 && dims.company > 40) return { type: "board_removed", label: "BOARD REMOVED", emoji: "🚪", line: `Board removed you in week ${displayWeek}. ${arr > 0 ? `Company was worth $${Math.round(arr * 1.2)}M.` : ""}` };
   // IPO: requires high ARR, late game, AND healthy dimensions. You have to earn this AND survive.
   if (week >= 20 && arr >= 30 && dims.integrity > 45 && dims.relationships > 35 && dims.energy > 25) return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${displayWeek} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
   // Acquisition: mid-game exit, probabilistic. Requires real traction.
@@ -802,7 +802,7 @@ export function getValuation(ending: Ending, arr: number): number {
   switch (ending.type) {
     case "ipo": return Math.round(arr * 3.5);
     case "acquired": return Math.round(arr * 2.2);
-    case "board_removed": return Math.round(arr / 8);
+    case "board_removed": return Math.round(arr * 1.2);
     case "forced_sale": return Math.round(arr * 0.8);
     case "burnout": return Math.round(arr / 10);
     case "bankrupt": return 0;
