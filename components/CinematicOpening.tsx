@@ -332,7 +332,7 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                 That was one decision. You&apos;ll make twenty-three more.
               </div>
 
-              {/* Label — appears above the input like a whisper */}
+              {/* Label — clear and direct */}
               <div style={{
                 fontSize: 10,
                 color: "rgba(255,255,255,0.2)",
@@ -341,38 +341,47 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
                 textTransform: "uppercase",
                 marginBottom: 16,
               }}>
-                {companyName.trim() ? "Your company" : "What will you build?"}
+                Name your company
               </div>
 
-              {/* The input — writing on glass. No placeholder. Just a blinking cursor and silence. */}
+              {/* The input — writing on glass */}
               <div style={{ marginBottom: 12, position: "relative" }}>
-                <input
-                  id="company-name"
-                  value={companyName}
-                  onChange={e => setCompanyName(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleStart()}
-                  autoFocus
-                  maxLength={28}
-                  autoComplete="off"
-                  autoCapitalize="words"
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    borderBottom: `1px solid ${companyName.trim() ? "rgba(255,238,210,0.25)" : "rgba(255,255,255,0.08)"}`,
-                    padding: "12px 0",
-                    width: "100%",
-                    maxWidth: 340,
-                    fontSize: "clamp(26px, 7vw, 36px)",
-                    color: "#fff",
-                    textAlign: "center",
-                    fontFamily: FONTS.display,
-                    fontWeight: 600,
-                    letterSpacing: "-0.5px",
-                    outline: "none",
-                    transition: "border-color 0.8s ease",
-                    caretColor: "rgba(255,238,210,0.5)",
-                  }}
-                />
+                <form autoComplete="off" onSubmit={e => { e.preventDefault(); handleStart(); }} style={{ margin: 0 }}>
+                  <input
+                    id="company-name"
+                    name="company-game-name"
+                    value={companyName}
+                    onChange={e => setCompanyName(e.target.value)}
+                    autoFocus
+                    maxLength={28}
+                    autoComplete="nope"
+                    autoCorrect="off"
+                    autoCapitalize="words"
+                    spellCheck={false}
+                    data-form-type="other"
+                    data-lpignore="true"
+                    inputMode="text"
+                    role="textbox"
+                    aria-label="Company name"
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      borderBottom: `1px solid ${companyName.trim() ? "rgba(255,238,210,0.25)" : "rgba(255,255,255,0.08)"}`,
+                      padding: "12px 0",
+                      width: "100%",
+                      maxWidth: 340,
+                      fontSize: "clamp(26px, 7vw, 36px)",
+                      color: "#fff",
+                      textAlign: "center",
+                      fontFamily: FONTS.display,
+                      fontWeight: 600,
+                      letterSpacing: "-0.5px",
+                      outline: "none",
+                      transition: "border-color 0.8s ease",
+                      caretColor: "rgba(255,238,210,0.5)",
+                    }}
+                  />
+                </form>
               </div>
 
               {/* The commitment — fades in when the name exists */}
