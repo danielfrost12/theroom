@@ -24,20 +24,20 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
     if (!ghost) return "Morning light through the window. Your laptop is open. Coffee\u2019s going cold.";
     switch (ghost.ending) {
       case 'burnout':
-        return "Morning light through the window. You\u2019ve been here before. Your body remembers, even if you don\u2019t want it to.";
+        return "Morning light. You\u2019ve been here before. Your body remembers.";
       case 'bankrupt':
-        return "Morning light through the window. New office. New number in the bank. Same feeling in your chest.";
+        return "Morning light. New office, new bank account. Same feeling in your chest.";
       case 'disgraced':
-        return "Morning light through the window. This time you promised yourself: no shortcuts. We\u2019ll see.";
+        return "Morning light. You promised yourself: no shortcuts this time.";
       case 'board_removed':
-        return "Morning light through the window. This time, nobody can take it from you. Not yet.";
+        return "Morning light. This time, nobody can take it from you. Not yet.";
       case 'forced_sale':
-        return "Morning light through the window. Last time someone else decided when it ended. Not this time.";
+        return "Morning light. Last time someone else decided when it ended.";
       case 'ipo':
       case 'acquired':
-        return "Morning light through the window. You\u2019ve done this before. Made it, even. The question is whether you can do it without losing what you lost last time.";
+        return "Morning light. You\u2019ve done this before. Made it, even. Can you do it without the cost?";
       default:
-        return "Morning light through the window. Again. Different company, same chair, same light.";
+        return "Morning light. Again. Different company, same chair.";
     }
   })();
 
