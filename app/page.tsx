@@ -50,7 +50,7 @@ export default function Page() {
       reset();
       return;
     }
-    if ((screen === 'game' || screen === 'cinema') && !companyName && hydrated) {
+    if (screen === 'game' && !companyName && hydrated) {
       // Mid-game reload with no company name — can't recover
       reset();
       return;
