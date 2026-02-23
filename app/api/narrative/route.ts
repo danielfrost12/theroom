@@ -3,29 +3,61 @@ import { NextRequest, NextResponse } from 'next/server';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
-function buildScenePrompt(context: string, choice: string, dims: { company: number; relationships: number; energy: number; integrity: number }, week: number, companyName: string, departedCharacters?: string[]): string {
+type DimValues = { company: number; relationships: number; energy: number; integrity: number };
+
+function buildScenePrompt(
+  context: string, choice: string, dims: DimValues, week: number, companyName: string,
+  departedCharacters?: string[], unchosenOption?: string,
+  chosenEffects?: Partial<DimValues>, unchosenEffects?: Partial<DimValues>, category?: string,
+): string {
   const dimSummary = `Company: ${dims.company}/100, Relationships: ${dims.relationships}/100, Energy: ${dims.energy}/100, Integrity: ${dims.integrity}/100`;
   const act = week <= 7 ? 'Act 1 (Honeymoon — optimism, building)' : week <= 17 ? 'Act 2 (The Grind — cracks show, fatigue)' : 'Act 3 (The Reckoning — legacy, cost)';
   const departedNote = departedCharacters && departedCharacters.length > 0
     ? `\n- IMPORTANT: ${departedCharacters.join(' and ')} already LEFT the company. Do NOT mention them. They are gone.`
     : '';
+
+  // Build tradeoff context so the AI knows what the choice cost and gained
+  const dimLabels: Record<string, string> = {
+    company: 'product/company', relationships: 'team trust', energy: 'personal energy', integrity: 'integrity'
+  };
+  let tradeoffBlock = '';
+  if (chosenEffects) {
+    const gains: string[] = [];
+    const costs: string[] = [];
+    for (const [k, v] of Object.entries(chosenEffects)) {
+      if (v && v >= 5) gains.push(dimLabels[k] || k);
+      else if (v && v <= -5) costs.push(dimLabels[k] || k);
+    }
+    if (gains.length > 0 || costs.length > 0) {
+      tradeoffBlock = `\nTradeoff: ${gains.length > 0 ? `gained ${gains.join(' and ')}` : 'no clear gain'}${costs.length > 0 ? `, lost ${costs.join(' and ')}` : ''}.`;
+    }
+  }
+
+  const rejectedBlock = unchosenOption ? `\nRejected: "${unchosenOption}"` : '';
+  const categoryBlock = category ? `\nDilemma type: ${category}` : '';
+
   return `Narrator of "The Room," a startup simulation. SECOND PERSON, PRESENT TENSE only.
 
 Rules — break any and the output is rejected:
 - Always "you" — never "the CEO" or third person
-- Present tense — "Marcus looks up" not "Marcus looked up"
+- Present tense only
 - Characters: Marcus (engineer), Priya (co-founder), Elena (sales), David (investor)${departedNote}
-- 1-2 sentences ONLY. Maximum 30 words. This is a flash, not a paragraph.
-- Visual and visceral — show a face, a gesture, a silence. Not an explanation.
-- The last word should land like a cut in a film.
+- 1-2 sentences ONLY. Maximum 30 words.
+- The narrative MUST show DIRECT cause-and-effect: what they chose and what it caused.
+- Reference the specific tradeoff — what they gained and what it cost them.
+- Subtly imply what was lost by not choosing the alternative.
 - No preamble, no labels, no quotation marks around the whole response.
 
-Company: ${companyName}. Week ${week}/24. ${act}.
+Good: "Trusting Marcus bought loyalty but the sprint slipped. Two clients noticed."
+Good: "You told the board the truth. David nodded. The valuation dropped."
+Bad: "The room shifts. Nobody makes eye contact." (too generic — WHERE is the cause-and-effect?)
+
+Company: ${companyName}. Week ${week}/24. ${act}.${categoryBlock}
 Situation: ${context}
-Chose: ${choice}
+Chose: "${choice}"${rejectedBlock}${tradeoffBlock}
 State: ${dimSummary}
 
-Write the consequence. 1-2 sentences. 30 words max. A flash, not a story.`;
+Write the consequence of choosing "${choice}"${unchosenOption ? ` over "${unchosenOption}"` : ''}. Cause and effect. 1-2 sentences. 30 words max.`;
 }
 
 function buildEvaluatePrompt(customText: string, context: string, dims: { company: number; relationships: number; energy: number; integrity: number }, week: number, companyName: string): string {
@@ -103,8 +135,8 @@ export async function POST(request: NextRequest) {
 
   let prompt: string;
   if (type === 'scene') {
-    const { context, choice, dims, week, companyName, departedCharacters } = body;
-    prompt = buildScenePrompt(context, choice, dims, week, companyName, departedCharacters);
+    const { context, choice, dims, week, companyName, departedCharacters, unchosenOption, chosenEffects, unchosenEffects, category } = body;
+    prompt = buildScenePrompt(context, choice, dims, week, companyName, departedCharacters, unchosenOption, chosenEffects, unchosenEffects, category);
   } else if (type === 'endgame') {
     const { ending, companyName, decisions, dims } = body;
     prompt = buildEndgamePrompt(ending, companyName, decisions, dims);

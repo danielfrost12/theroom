@@ -1,13 +1,18 @@
 import { GameDimensions, Ending, Decision } from '../game/types';
 
 export async function generateNarrative(
-  context: string, choice: string, dims: GameDimensions, week: number, companyName: string, departedCharacters?: string[]
+  context: string, choice: string, dims: GameDimensions, week: number, companyName: string,
+  departedCharacters?: string[],
+  unchosenOption?: string,
+  chosenEffects?: Partial<GameDimensions>,
+  unchosenEffects?: Partial<GameDimensions>,
+  category?: string,
 ): Promise<string> {
   try {
     const res = await fetch('/api/narrative', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'scene', context, choice, dims, week, companyName, departedCharacters }),
+      body: JSON.stringify({ type: 'scene', context, choice, dims, week, companyName, departedCharacters, unchosenOption, chosenEffects, unchosenEffects, category }),
     });
     if (!res.ok) throw new Error(`API ${res.status}`);
     const data = await res.json();

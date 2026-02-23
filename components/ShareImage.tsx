@@ -360,72 +360,60 @@ export function ShareImage({
               </div>
             </div>
 
-            {/* Pivotal moments */}
-            {pivotalMoments.length > 0 && (
-              <div style={{
-                borderTop: "1px solid rgba(255,255,255,0.04)",
-                paddingTop: 12,
-                marginBottom: 12,
-              }}>
+            {/* Your Story — unified timeline of events, choices, and custom moves */}
+            {(() => {
+              // Merge pivotal moments with custom typed choices (contextualized)
+              const storyItems: { week: number; text: string }[] = [];
+              pivotalMoments.forEach(m => {
+                const weekMatch = m.match(/^Week (\d+):/);
+                storyItems.push({ week: weekMatch ? parseInt(weekMatch[1]) : 0, text: m });
+              });
+              if (decisions) {
+                decisions.filter(d => d.isCustom).forEach(d => {
+                  const briefContext = d.context.split('.')[0] || "A critical moment";
+                  const choiceText = d.choice.length > 30 ? d.choice.slice(0, 27) + '...' : d.choice;
+                  const alreadyTracked = storyItems.some(s => s.week === d.week && s.text.includes(choiceText.slice(0, 15)));
+                  if (!alreadyTracked) {
+                    storyItems.push({ week: d.week, text: `Week ${d.week}: ${choiceText} — ${briefContext.toLowerCase()}` });
+                  }
+                });
+              }
+              // Sort chronologically, take up to 4
+              storyItems.sort((a, b) => a.week - b.week);
+              const items = storyItems.slice(0, 4);
+              if (items.length === 0) return null;
+              return (
                 <div style={{
-                  fontSize: 8,
-                  color: "rgba(255,255,255,0.2)",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  letterSpacing: "1.5px",
-                  textTransform: "uppercase" as const,
-                  marginBottom: 6,
-                  textAlign: "center" as const,
+                  borderTop: "1px solid rgba(255,255,255,0.04)",
+                  paddingTop: 12,
+                  marginBottom: 12,
                 }}>
-                  DEFINING MOMENTS
-                </div>
-                {pivotalMoments.slice(0, 3).map((m, i) => (
-                  <div key={i} style={{
-                    fontSize: 10,
-                    color: "rgba(255,255,255,0.3)",
-                    fontFamily: "'DM Sans', sans-serif",
-                    lineHeight: 1.4,
+                  <div style={{
+                    fontSize: 8,
+                    color: "rgba(255,255,255,0.2)",
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: "1.5px",
+                    textTransform: "uppercase" as const,
+                    marginBottom: 6,
                     textAlign: "center" as const,
-                    marginBottom: 2,
                   }}>
-                    {m}
+                    YOUR STORY
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* Custom moves — player's own choices */}
-            {decisions && decisions.filter(d => d.isCustom).length > 0 && (
-              <div style={{
-                borderTop: "1px solid rgba(255,255,255,0.04)",
-                paddingTop: 12,
-                marginBottom: 12,
-              }}>
-                <div style={{
-                  fontSize: 8,
-                  color: "rgba(255,238,210,0.25)",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  letterSpacing: "1.5px",
-                  textTransform: "uppercase" as const,
-                  marginBottom: 6,
-                  textAlign: "center" as const,
-                }}>
-                  YOUR MOVES
+                  {items.map((item, i) => (
+                    <div key={i} style={{
+                      fontSize: 10,
+                      color: "rgba(255,255,255,0.3)",
+                      fontFamily: "'DM Sans', sans-serif",
+                      lineHeight: 1.4,
+                      textAlign: "center" as const,
+                      marginBottom: 2,
+                    }}>
+                      {item.text}
+                    </div>
+                  ))}
                 </div>
-                {decisions.filter(d => d.isCustom).slice(0, 2).map((d, i) => (
-                  <div key={i} style={{
-                    fontSize: 9,
-                    color: "rgba(255,238,210,0.35)",
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontStyle: "italic",
-                    lineHeight: 1.4,
-                    textAlign: "center" as const,
-                    marginBottom: 2,
-                  }}>
-                    Wk {d.week}: &ldquo;{d.choice.length > 40 ? d.choice.slice(0, 37) + '...' : d.choice}&rdquo;
-                  </div>
-                ))}
-              </div>
-            )}
+              );
+            })()}
 
             {/* Headline quote */}
             <div style={{

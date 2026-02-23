@@ -45,7 +45,6 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const [compressMoment, setCompressMoment] = useState<string>("");
   const [waitingForTap, setWaitingForTap] = useState(false);
   const [foreshadow, setForeshadow] = useState<string | null>(null);
-  const [regretHint, setRegretHint] = useState<string | null>(null);
   const [isConsequence, setIsConsequence] = useState(false);
   const [stakes, setStakes] = useState<TensionStakes>('medium');
   const [surpriseEvent, setSurpriseEvent] = useState<SurpriseEvent | null>(null);
@@ -61,7 +60,6 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const [peakShown, setPeakShown] = useState(false);
   const [selectedDot, setSelectedDot] = useState<number | null>(null);
   const [customOutcome, setCustomOutcome] = useState<{ effects: Partial<GameDimensions>; wasCustom: boolean; verdict?: string } | null>(null);
-  const [choiceImpact, setChoiceImpact] = useState<{ deltas: Record<string, number>; choice: string } | null>(null);
   const pendingContinueRef = useRef<(() => void) | null>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const usedTensionsRef = useRef<Set<number>>(new Set());
@@ -284,7 +282,6 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     setCustomText("");
     setIsFourthWall(!!t.fourthWall);
     setChoicesVisible(false);
-    setChoiceImpact(null);
   };
 
   // --- HANDLE CHOICE ---
@@ -293,7 +290,6 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     setLoading(true);
     setNarrative(null);
     setForeshadow(null);
-    setRegretHint(null);
     setIsFourthWall(false);
     setCustomOutcome((isCustom || showAsCustom) ? { effects, wasCustom: true, verdict } : null);
 
@@ -321,51 +317,6 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       const isLeft = choice === tension.left;
       const shadow = isLeft ? tension.leftForeshadow : tension.rightForeshadow;
       if (shadow) setForeshadow(shadow);
-
-      // Regret loop — show the cost of the unchosen path (one dimension only).
-      // "The other choice would have..." — creates the "what if" that drives replay.
-      // Only show in Act 2+ and not on forced choices — let Act 1 be pure.
-      const unchosen = isLeft ? tension.rightEffect : tension.leftEffect;
-      const unchosenLabel = isLeft ? tension.right : tension.left;
-      const dimLabelsRegret: Record<string, string> = { company: 'Company', relationships: 'People', energy: 'Energy', integrity: 'Ethics' };
-      const currentAct2 = getAct(week);
-      if (currentAct2 >= 2 && tension.format !== 'forced') {
-        // Find the biggest positive effect in the unchosen path — what you missed
-        const dimKeys2 = ['company', 'relationships', 'energy', 'integrity'] as const;
-        let bestGain = 0;
-        let bestDim = '';
-        for (const k of dimKeys2) {
-          const val = unchosen[k] || 0;
-          if (val > bestGain) { bestGain = val; bestDim = k; }
-        }
-        if (bestGain >= 5 && bestDim) {
-          // Jobs: no numbers. The regret should feel like a whisper, not a tooltip.
-          const regretPhrases: Record<string, string[]> = {
-            Company: [
-              `"${unchosenLabel}" would have saved the product.`,
-              `The product needed "${unchosenLabel}."`,
-            ],
-            People: [
-              `"${unchosenLabel}" would have kept someone.`,
-              `Someone needed you to choose "${unchosenLabel}."`,
-            ],
-            Energy: [
-              `"${unchosenLabel}" would have given you rest.`,
-              `Your body wanted "${unchosenLabel}."`,
-            ],
-            Ethics: [
-              `"${unchosenLabel}" would have been the right thing.`,
-              `You\u2019ll think about "${unchosenLabel}" later.`,
-            ],
-          };
-          const phrases = regretPhrases[dimLabelsRegret[bestDim]] || [`"${unchosenLabel}" mattered.`];
-          setRegretHint(phrases[Math.floor(Math.random() * phrases.length)]);
-        } else {
-          setRegretHint(null);
-        }
-      } else {
-        setRegretHint(null);
-      }
     }
 
     // Apply effects — LOSS AVERSION: first plays have LESS protection.
@@ -406,15 +357,6 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
         });
       }
     }
-
-    // Track actual dimension changes for feedback display
-    const actualDeltas: Record<string, number> = {
-      company: newDims.company - dims.company,
-      relationships: newDims.relationships - dims.relationships,
-      energy: newDims.energy - dims.energy,
-      integrity: newDims.integrity - dims.integrity,
-    };
-    setChoiceImpact({ deltas: actualDeltas, choice });
 
     // Natural recovery — REMOVED for all players.
     // Every dimension point is earned through choices. No free healing.
@@ -506,15 +448,50 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     const newWeekLog = [...weekLog, weekColor];
     setWeekLog(newWeekLog);
 
+    // Track high-impact choices as pivotal moments for the scorecard
+    if (Math.abs(delta) >= 10) {
+      if (isCustom || showAsCustom) {
+        // Custom choices: contextualize the raw text with the situation
+        const briefContext = (tension?.context || "").split('.')[0] || "A critical moment";
+        setPivotalMoments(prev => [...prev.slice(-4), `Week ${week}: ${choice.length > 30 ? choice.slice(0, 27) + '...' : choice} — ${briefContext.toLowerCase()}`]);
+      } else if (tension) {
+        // Preset choices: describe the tradeoff they made
+        const dimLabelsP: Record<string, string> = { company: 'the product', relationships: 'people', energy: 'energy', integrity: 'ethics' };
+        const dimKeysP: (keyof GameDimensions)[] = ['company', 'relationships', 'energy', 'integrity'];
+        let biggest: keyof GameDimensions = 'company';
+        let biggestVal = 0;
+        for (const k of dimKeysP) {
+          const v = Math.abs(newDims[k] - dims[k]);
+          if (v > biggestVal) { biggestVal = v; biggest = k; }
+        }
+        const dir = (newDims[biggest] - dims[biggest]) > 0 ? 'Chose' : 'Sacrificed';
+        setPivotalMoments(prev => [...prev.slice(-4), `Week ${week}: ${dir} ${dimLabelsP[biggest]}`]);
+      }
+    }
+
     // Build list of departed characters for AI narrative continuity
     const departed: string[] = [];
     if (usedEvents.has('elena_quit')) departed.push('Elena');
     if (usedEvents.has('marcus_leaves')) departed.push('Marcus');
 
-    // Generate narrative
+    // Determine unchosen option and effects for narrative context
+    const isLeftChoice = tension ? choice === tension.left : false;
+    const unchosenOption = tension
+      ? (isLeftChoice ? tension.right : tension.left)
+      : undefined;
+    const chosenEffects = tension
+      ? (isLeftChoice ? tension.leftEffect : tension.rightEffect)
+      : undefined;
+    const unchosenEffects = tension
+      ? (isLeftChoice ? tension.rightEffect : tension.leftEffect)
+      : undefined;
+
+    // Generate narrative — AI now knows both options and the tradeoff
     const narrativeText = await generateNarrative(
       tension?.context || customText,
-      choice, newDims, week, companyName, departed.length > 0 ? departed : undefined
+      choice, newDims, week, companyName,
+      departed.length > 0 ? departed : undefined,
+      unchosenOption, chosenEffects, unchosenEffects, tension?.category,
     );
 
     // Enforce narrative brevity — 2 sentences max, 35 words max. A flash, not a paragraph.
@@ -557,11 +534,11 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             const compressedWeek = newWeek + skipWeeks;
 
             // Drift: time passes and things decay without your attention.
-            // Relationships and energy rot faster — neglect is the silent killer.
+            // Softened — neglect still matters but a skip-week alone won't kill you.
             const driftDims = { ...newDims };
-            driftDims.relationships = Math.max(0, driftDims.relationships - skipWeeks * 2);
-            driftDims.energy = Math.max(0, driftDims.energy - skipWeeks * 2);
-            driftDims.company = Math.max(0, driftDims.company - skipWeeks);
+            driftDims.relationships = Math.max(0, driftDims.relationships - skipWeeks);
+            driftDims.energy = Math.max(0, driftDims.energy - skipWeeks);
+            driftDims.company = Math.max(0, driftDims.company - Math.ceil(skipWeeks * 0.5));
             driftDims.integrity = Math.max(0, driftDims.integrity - Math.ceil(skipWeeks * 0.5));
             setDims(driftDims);
             setWeek(compressedWeek);
@@ -1049,39 +1026,6 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             }}>
               {narrative}
             </div>
-            {/* Dimension impact — show what changed and why for ALL choices */}
-            {choiceImpact && !customOutcome?.wasCustom && (
-              <div style={{
-                marginTop: 16, paddingTop: 12,
-                borderTop: "1px solid rgba(255,255,255,0.04)",
-                opacity: 0, animation: "fadeUp 0.5s ease 0.6s forwards",
-              }}>
-                <div style={{
-                  display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap",
-                }}>
-                  {([
-                    { key: "company", label: "Company" },
-                    { key: "relationships", label: "People" },
-                    { key: "energy", label: "Energy" },
-                    { key: "integrity", label: "Ethics" },
-                  ]).map(({ key, label }) => {
-                    const val = choiceImpact.deltas[key] || 0;
-                    if (val === 0) return null;
-                    return (
-                      <span key={key} style={{
-                        fontSize: 11,
-                        fontFamily: FONTS.mono,
-                        fontWeight: 500,
-                        color: val > 0 ? "rgba(74,222,128,0.55)" : "rgba(248,113,113,0.55)",
-                        letterSpacing: "0.3px",
-                      }}>
-                        {label} {val > 0 ? `+${val}` : val}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
             {/* Custom choice feedback — show what the AI decided your move did */}
             {customOutcome && customOutcome.wasCustom && (
               <div style={{
@@ -1176,22 +1120,6 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                   fontStyle: "italic", fontFamily: FONTS.display, lineHeight: 1.6,
                 }}>
                   {foreshadow}
-                </div>
-              </div>
-            )}
-            {/* Regret loop — the path not taken. One quiet line. Virgil: only when foreshadow is silent. */}
-            {regretHint && !foreshadow && (
-              <div style={{
-                marginTop: foreshadow ? 8 : 16,
-                paddingTop: foreshadow ? 0 : 12,
-                borderTop: foreshadow ? "none" : "1px solid rgba(255,255,255,0.03)",
-                opacity: 0, animation: "fadeUp 0.6s ease 1.8s forwards",
-              }}>
-                <div style={{
-                  fontSize: 11, color: "rgba(255,255,255,0.15)",
-                  fontFamily: FONTS.mono, letterSpacing: "0.3px",
-                }}>
-                  {regretHint}
                 </div>
               </div>
             )}
@@ -1582,29 +1510,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                 {[
                   { label: tension.left, effects: tension.leftEffect },
                   { label: tension.right, effects: tension.rightEffect },
-                ].map((opt, i) => {
-                  // Specific cost signal — tells you what you'll gain and what it costs
-                  const efx = opt.effects;
-                  const dimLabelsH: Record<string, string> = { company: 'product', relationships: 'people', energy: 'energy', integrity: 'ethics' };
-                  const gains: string[] = [];
-                  const costs: string[] = [];
-                  const dimKeysH = ['company', 'relationships', 'energy', 'integrity'] as const;
-                  for (const k of dimKeysH) {
-                    const v = efx[k];
-                    if (v >= 8) gains.push(dimLabelsH[k]);
-                    else if (v <= -8) costs.push(dimLabelsH[k]);
-                  }
-                  let hint = '';
-                  if (gains.length > 0 && costs.length > 0) {
-                    hint = `+${gains[0]}, −${costs[0]}`;
-                  } else if (costs.length > 0) {
-                    hint = `costs ${costs.join(' & ')}`;
-                  } else if (gains.length > 0) {
-                    hint = `helps ${gains[0]}`;
-                  }
-                  // No hint for ambiguous/small-effect choices — that IS the skill
-
-                  return (
+                ].map((opt, i) => (
                     <button
                       key={i}
                       onClick={() => handleChoice(opt.label, opt.effects)}
@@ -1616,7 +1522,6 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                         transition: "all 0.3s ease",
                         position: "relative",
                         borderLeft: i === 1 ? "1px solid rgba(255,238,210,0.1)" : "none",
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
                       }}
                       onMouseEnter={e => { e.currentTarget.style.color = COLORS.warmHover; }}
                       onMouseLeave={e => { e.currentTarget.style.color = COLORS.warm; }}
@@ -1627,19 +1532,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                       }}>
                         {opt.label}
                       </span>
-                      {hint && (
-                        <span style={{
-                          fontSize: 10, fontFamily: FONTS.mono,
-                          color: "rgba(255,255,255,0.18)",
-                          letterSpacing: "0.5px",
-                          fontStyle: "italic",
-                        }}>
-                          {hint}
-                        </span>
-                      )}
                     </button>
-                  );
-                })}
+                  ))}
               </div>
             )}
 

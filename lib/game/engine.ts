@@ -723,10 +723,10 @@ function applyStatePressure(t: IndexedTension, dims: GameDimensions): IndexedTen
       const momentum = dimValue >= 70 ? 0.7 : dimValue >= 55 ? 0.9 : 1.0;
       return Math.round(effect * momentum);
     }
-    // Vulnerability spiral: weak dimensions take BRUTAL damage.
-    // The lower you are, the faster you fall. Deaths should feel sudden, tragic, and unfair.
-    // This is the "one more turn" mechanic — you're always one bad choice from disaster.
-    const vulnerability = dimValue < 15 ? 1.8 : dimValue < 25 ? 1.5 : dimValue < 35 ? 1.3 : dimValue < 45 ? 1.1 : 1.0;
+    // Vulnerability spiral: weak dimensions take increased damage.
+    // Softened to max 1.3x — you still spiral if you neglect things,
+    // but one bad week doesn't cascade into unrecoverable damage.
+    const vulnerability = dimValue < 15 ? 1.3 : dimValue < 25 ? 1.2 : dimValue < 35 ? 1.1 : 1.0;
     return Math.round(effect * vulnerability);
   };
 
