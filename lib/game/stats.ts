@@ -136,42 +136,57 @@ export function getPercentile(valuation: number): number {
 
 // Near-miss message — what you almost had, designed to sting
 export function getNearMiss(ending: string, dims: { company: number; relationships: number; energy: number; integrity: number }, arr: number, week: number): string | null {
-  const dimLabels: Record<string, string> = { company: 'Company', relationships: 'People', energy: 'Energy', integrity: 'Ethics' };
+  // Near-miss lines should sting — poetic, human, never showing raw numbers.
+  // The player should feel the gap between what happened and what almost did.
 
   if (ending === 'burnout' && arr >= 20) {
-    return `$${arr}M ARR when you collapsed. ${24 - week} weeks from the finish line.`;
+    const weeksLeft = 24 - week;
+    return weeksLeft <= 4
+      ? `$${arr}M ARR. So close to the finish line your hand was on the door.`
+      : `$${arr}M ARR when your body quit. The company didn't need you to keep going.`;
   }
   if (ending === 'burnout' && dims.company > 50) {
-    return `The company was thriving. You weren't. ${dims.energy} Energy when it ended.`;
+    return "The company was thriving. You weren't.";
   }
   if (ending === 'bankrupt' && dims.energy > 40 && dims.relationships > 40) {
-    return `The team was healthy. The bank account wasn't. You needed $${Math.round(40 + arr * 1.5)}K more.`;
+    return "The team was healthy. The bank account wasn't.";
   }
   if (ending === 'disgraced' && arr >= 10) {
     return `$${arr}M ARR. All of it gone with your reputation.`;
   }
   if (ending === 'board_removed' && dims.company > 50) {
-    return `Company at ${dims.company}. They didn't fire the company. They fired you.`;
+    return "They didn't fire the company. They fired you.";
   }
   if (ending === 'time_up' && arr >= 20) {
     const needed = 30 - arr;
-    return `$${needed}M more ARR and you would have IPO'd. ${needed <= 5 ? "That close." : ""}`;
+    return needed <= 5
+      ? `$${needed}M more ARR and you would have IPO'd. That close.`
+      : `$${needed}M short of an IPO. The clock doesn't care about momentum.`;
   }
   if (ending === 'time_up') {
-    // Find the weakest dimension
+    // Find the weakest dimension — give human-readable regret, not raw stats
     const entries = Object.entries(dims) as [string, number][];
     const weakest = entries.reduce((a, b) => a[1] < b[1] ? a : b);
     if (weakest[1] < 30) {
-      return `${dimLabels[weakest[0]]} at ${weakest[1]} held everything back.`;
+      const regretMap: Record<string, string> = {
+        company: "The product never found its footing.",
+        relationships: "You lost the people who could have saved it.",
+        energy: "You ran out of yourself before you ran out of time.",
+        integrity: "The shortcuts caught up. They always do.",
+      };
+      return regretMap[weakest[0]] || null;
     }
   }
   if (ending === 'forced_sale') {
-    return `Forced to sell at $${Math.round(arr * 0.8)}M. The company was worth $${Math.round(arr * 2.5)}M on a good day.`;
+    return "You took what you could get. Everyone knew it was worth more.";
   }
 
   // Generic near-miss for deaths
   if (['burnout', 'bankrupt', 'disgraced', 'board_removed'].includes(ending)) {
-    return `${24 - week} weeks left. The story wasn't supposed to end here.`;
+    const weeksLeft = 24 - week;
+    return weeksLeft > 8
+      ? "The story wasn't supposed to end here."
+      : `${weeksLeft} weeks left. Almost made it.`;
   }
 
   return null;

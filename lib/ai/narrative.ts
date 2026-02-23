@@ -42,7 +42,7 @@ export async function generateEndgameNarrative(
 
 export async function evaluateCustomChoice(
   customText: string, context: string, dims: GameDimensions, week: number, companyName: string
-): Promise<{ company: number; relationships: number; energy: number; integrity: number }> {
+): Promise<{ company: number; relationships: number; energy: number; integrity: number; verdict?: string }> {
   try {
     const res = await fetch('/api/narrative', {
       method: 'POST',
@@ -57,6 +57,7 @@ export async function evaluateCustomChoice(
         relationships: Math.max(-20, Math.min(20, data.relationships || 0)),
         energy: Math.max(-20, Math.min(20, data.energy || 0)),
         integrity: Math.max(-20, Math.min(20, data.integrity || 0)),
+        verdict: data.verdict || undefined,
       };
     }
     return getFallbackCustomEffects();

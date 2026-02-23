@@ -68,6 +68,7 @@ export interface Decision {
   context: string;
   choice: string;
   dims: GameDimensions;
+  isCustom?: boolean;  // player typed their own choice
 }
 
 export interface GameState {

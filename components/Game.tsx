@@ -60,7 +60,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const [peakMoment, setPeakMoment] = useState<string | null>(null);
   const [peakShown, setPeakShown] = useState(false);
   const [selectedDot, setSelectedDot] = useState<number | null>(null);
-  const [customOutcome, setCustomOutcome] = useState<{ effects: Partial<GameDimensions>; wasCustom: boolean } | null>(null);
+  const [customOutcome, setCustomOutcome] = useState<{ effects: Partial<GameDimensions>; wasCustom: boolean; verdict?: string } | null>(null);
   const pendingContinueRef = useRef<(() => void) | null>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const usedTensionsRef = useRef<Set<number>>(new Set());
@@ -286,14 +286,14 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   };
 
   // --- HANDLE CHOICE ---
-  const handleChoice = async (choice: string, effects: Partial<GameDimensions>, isCustom = false, showAsCustom = false) => {
+  const handleChoice = async (choice: string, effects: Partial<GameDimensions>, isCustom = false, showAsCustom = false, verdict?: string) => {
     clearAllTimeouts();
     setLoading(true);
     setNarrative(null);
     setForeshadow(null);
     setRegretHint(null);
     setIsFourthWall(false);
-    setCustomOutcome((isCustom || showAsCustom) ? { effects, wasCustom: true } : null);
+    setCustomOutcome((isCustom || showAsCustom) ? { effects, wasCustom: true, verdict } : null);
 
     // Earned silence: after critical Act 2/3 choices, show darkness instead of a breathing quote
     const silenceEarned = shouldEarnSilence(week, stakes, isConsequence);
@@ -487,7 +487,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       setPivotalMoments(prev => [...prev.slice(-(4 - 1)), consequenceMoment]);
     }
 
-    const decision: Decision = { week, context: tension?.context || "Custom move", choice, dims: { ...newDims } };
+    const decision: Decision = { week, context: tension?.context || "Custom move", choice, dims: { ...newDims }, isCustom: isCustom || showAsCustom };
     const newDecisions = [...decisions, decision];
     setDecisions(newDecisions);
 
@@ -610,8 +610,8 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       const aiEffects = await evaluateCustomChoice(
         text, tension?.context || text, dims, week, companyName
       );
-      // AI returned real effects — showAsCustom=true so player sees impact feedback
-      handleChoice(text, aiEffects as Partial<GameDimensions>, false, true);
+      // AI returned real effects + verdict — showAsCustom=true so player sees impact feedback
+      handleChoice(text, aiEffects as Partial<GameDimensions>, false, true, aiEffects.verdict);
     } catch {
       // Fallback to random if AI fails
       handleChoice(text, {}, true);
@@ -1054,6 +1054,20 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                 }}>
                   YOUR MOVE
                 </div>
+                {/* AI verdict — one-liner judgment of the player's creative input */}
+                {customOutcome.verdict && (
+                  <div style={{
+                    fontSize: 12,
+                    color: "rgba(255,238,210,0.55)",
+                    fontStyle: "italic",
+                    fontFamily: FONTS.display,
+                    textAlign: "center",
+                    marginBottom: 8,
+                    lineHeight: 1.5,
+                  }}>
+                    {customOutcome.verdict}
+                  </div>
+                )}
                 <div style={{
                   display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap",
                 }}>

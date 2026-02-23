@@ -232,6 +232,7 @@ export function Endgame({ ending, arr, dims, decisions, weekLog, pivotalMoments,
             pivotalMoments={moments}
             percentile={percentile}
             nearMiss={nearMiss}
+            decisions={decisions}
             onPlayAgain={onPlayAgain}
           />
         </div>

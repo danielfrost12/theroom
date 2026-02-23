@@ -45,8 +45,9 @@ RULES FOR JUDGING — be fair, reward creativity:
 - An action that ignores the situation entirely should have mostly negative effects (-5 to -10 each).
 - A thoughtful, creative action addressing the problem should have a clear positive (+8 to +15) on the most relevant dimension, with realistic costs elsewhere.
 
-Return ONLY a JSON object with four numbers, no explanation:
-{"company": X, "relationships": X, "energy": X, "integrity": X}`;
+Return ONLY a JSON object with five fields — four numbers and a verdict. The verdict is one short sentence (under 10 words) — a pithy judgment of their move. Like a mentor's aside. Examples: "Bold. The board noticed.", "That's a band-aid, not a fix.", "Creative — but it'll cost you sleep."
+
+{"company": X, "relationships": X, "energy": X, "integrity": X, "verdict": "your one-liner"}`;
 }
 
 function buildEndgamePrompt(ending: { type: string; line: string }, companyName: string, decisions: { week: number; context: string; choice: string }[], dims: { company: number; relationships: number; energy: number; integrity: number }): string {
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
       const text = data.content?.map((i) => i.text || '').join('') || '';
 
       // Parse JSON from the response
-      const jsonMatch = text.match(/\{[^}]+\}/);
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
           const effects = JSON.parse(jsonMatch[0]);
@@ -127,6 +128,7 @@ export async function POST(request: NextRequest) {
             relationships: Math.max(-20, Math.min(20, effects.relationships || 0)),
             energy: Math.max(-20, Math.min(20, effects.energy || 0)),
             integrity: Math.max(-20, Math.min(20, effects.integrity || 0)),
+            verdict: typeof effects.verdict === 'string' ? effects.verdict.slice(0, 80) : null,
           });
         } catch {
           return NextResponse.json({ company: 0, relationships: 0, energy: -3, integrity: 0 });

@@ -285,7 +285,7 @@ export function ShareImage({
                 letterSpacing: "-1px",
                 marginBottom: 4,
               }}>
-                ${valuation}M
+                {valuation > 0 ? `$${valuation}M` : "No exit"}
               </div>
               <div style={{
                 fontSize: 11,
@@ -294,7 +294,7 @@ export function ShareImage({
                 fontFamily: "'JetBrains Mono', monospace",
                 marginBottom: 8,
               }}>
-                FINAL VALUATION
+                {valuation > 0 ? "FINAL VALUATION" : "THE COMPANY NEVER MADE IT"}
               </div>
 
               {/* Percentile — social comparison that drives shares */}
@@ -309,7 +309,7 @@ export function ShareImage({
                 letterSpacing: "0.5px",
                 marginBottom: nearMiss ? 6 : 28,
               }}>
-                Better than {percentile}% of players
+                {valuation <= 0 ? "Most founders do better." : `Better than ${percentile}% of players`}
               </div>
 
               {/* Near-miss — the sting that makes people share */}

@@ -738,6 +738,9 @@ export function checkEnding(state: { week: number; cash: number; arr: number; di
       return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${displayWeek} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
     }
     const val = Math.round(arr * 1.5);
+    if (val <= 0) {
+      return { type: "time_up", label: "TIME'S UP", emoji: "⏰", line: `${TOTAL_WEEKS} weeks. Never found product-market fit. The story just... stopped.` };
+    }
     return { type: "time_up", label: "TIME'S UP", emoji: "⏰", line: `${TOTAL_WEEKS} weeks. Company valued at $${val}M. The story just... stopped.` };
   }
 

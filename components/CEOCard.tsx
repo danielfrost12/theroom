@@ -1,7 +1,7 @@
 'use client';
 
 import { FONTS, COLORS, dimColor, weekDotColor } from '@/lib/game/constants';
-import { Ending, GameDimensions } from '@/lib/game/types';
+import { Ending, GameDimensions, Decision } from '@/lib/game/types';
 import { getPlayCount, getBestValuation, getCollectionStats } from '@/lib/game/stats';
 import { ShareImage } from './ShareImage';
 
@@ -19,6 +19,7 @@ interface CEOCardProps {
   pivotalMoments: string[];
   percentile: number;
   nearMiss: string | null;
+  decisions: Decision[];
   onPlayAgain: () => void;
 }
 
@@ -47,10 +48,11 @@ function viralSummary(weekCount: number, dims: GameDimensions, ending: Ending): 
   return `${weekCount} weeks. Chose ${chose} over ${lost}.`;
 }
 
-export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRuns, headline, mirror, dims, archetype, pivotalMoments, percentile, nearMiss, onPlayAgain }: CEOCardProps) {
+export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRuns, headline, mirror, dims, archetype, pivotalMoments, percentile, nearMiss, decisions, onPlayAgain }: CEOCardProps) {
   const playCount = getPlayCount();
   const bestVal = getBestValuation();
   const summary = viralSummary(weekLog.length, dims, ending);
+  const customMoves = decisions.filter(d => d.isCustom);
 
   const dimEntries = [
     { label: "Company", value: dims.company },
@@ -177,13 +179,13 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
             {/* Valuation */}
             <div style={{
               fontFamily: FONTS.mono,
-              fontSize: 38,
+              fontSize: valuation > 0 ? 38 : 28,
               fontWeight: 700,
-              color: "#fff",
+              color: valuation > 0 ? "#fff" : "rgba(255,255,255,0.4)",
               letterSpacing: "-1px",
               marginBottom: 4,
             }}>
-              ${valuation}M
+              {valuation > 0 ? `$${valuation}M` : "No exit"}
             </div>
             <div style={{
               fontSize: 10,
@@ -193,7 +195,7 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
               textTransform: "uppercase" as const,
               marginBottom: 8,
             }}>
-              Final Valuation
+              {valuation > 0 ? "Final Valuation" : "The company never made it"}
             </div>
 
             {/* Percentile — social comparison that stings or delights */}
@@ -207,7 +209,7 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
               fontFamily: FONTS.mono,
               letterSpacing: "0.5px",
             }}>
-              Better than {percentile}% of players
+              {valuation <= 0 ? "Most founders do better. Try again." : `Better than ${percentile}% of players`}
             </div>
 
             {/* Near-miss — the thing that stings. What you almost had. */}
@@ -319,6 +321,40 @@ export function CEOCard({ ending, companyName, valuation, weekLog, rank, totalRu
                   marginBottom: 3,
                 }}>
                   {m}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Custom moves — player's own choices and their impact */}
+          {customMoves.length > 0 && (
+            <div style={{
+              borderTop: "1px solid rgba(255,255,255,0.04)",
+              paddingTop: 12,
+              marginBottom: 12,
+            }}>
+              <div style={{
+                fontSize: 9,
+                color: "rgba(255,238,210,0.3)",
+                fontFamily: FONTS.mono,
+                letterSpacing: "1.5px",
+                textTransform: "uppercase" as const,
+                marginBottom: 8,
+                textAlign: "center" as const,
+              }}>
+                YOUR MOVES
+              </div>
+              {customMoves.slice(0, 3).map((d, i) => (
+                <div key={i} style={{
+                  fontSize: 11,
+                  color: "rgba(255,238,210,0.4)",
+                  fontFamily: FONTS.body,
+                  fontStyle: "italic" as const,
+                  lineHeight: 1.5,
+                  textAlign: "center" as const,
+                  marginBottom: 4,
+                }}>
+                  Week {d.week}: &ldquo;{d.choice.length > 50 ? d.choice.slice(0, 47) + '...' : d.choice}&rdquo;
                 </div>
               ))}
             </div>
