@@ -531,27 +531,28 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
         display: "flex", flexDirection: "column",
       }}>
 
-        {/* Lifeline — an SVG waveform of your company's life.
-            Not bars, not dots. A continuous line that rises and falls.
+        {/* Lifeline — your company's heartbeat rendered as a living waveform.
             Ive: "You should feel time running out, not count bars."
-            Dye: "The shape tells the story at a glance." */}
+            Dye: "The shape tells the story at a glance."
+            Chesky: "The company name should be on it. It's YOUR lifeline." */}
         {(() => {
-          const svgW = 280;
-          const svgH = 28;
-          const pad = 4;
+          const svgW = 300;
+          const svgH = 36;
+          const pad = 8;
           const usableW = svgW - pad * 2;
-          const stepX = usableW / 23; // 24 points, 23 gaps
-          const baseY = svgH - 4; // bottom baseline
-          const topY = 4;         // max peak
+          const stepX = usableW / 23;
+          const baseY = svgH - 8;
+          const topY = 6;
+          const weeksLeft = 24 - weekLog.length;
+          // Chesky: the future compresses as time runs out — walls closing in
+          const futureOpacity = Math.max(0.03, 0.12 - (weekLog.length / 24) * 0.09);
 
-          // Build y-values for each week
           const points: { x: number; y: number; color: string; filled: boolean; current: boolean }[] = [];
           for (let i = 0; i < 24; i++) {
             const x = pad + i * stepX;
             const isFilled = i < weekLog.length;
             const isCurrent = i === weekLog.length;
-
-            let y = baseY - 2; // default: barely above baseline
+            let y = baseY - 2;
             let color = "rgba(255,255,255,0.06)";
 
             if (isFilled) {
@@ -566,11 +567,10 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
               y = minDim < 30 ? topY + 2 : minDim < 50 ? topY + 10 : baseY - 6;
               color = "rgba(255,238,210,0.6)";
             }
-
             points.push({ x, y, color, filled: isFilled, current: isCurrent });
           }
 
-          // Build smooth path through filled + current points
+          // Smooth bézier path through story points
           const filledPoints = points.filter(p => p.filled || p.current);
           let pathD = "";
           if (filledPoints.length > 0) {
@@ -583,7 +583,13 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             }
           }
 
-          // Future: a dashed baseline
+          // Fill area under the curve — gradient gives depth
+          let areaPath = "";
+          if (filledPoints.length > 0) {
+            areaPath = pathD + ` L ${filledPoints[filledPoints.length - 1].x} ${baseY} L ${filledPoints[0].x} ${baseY} Z`;
+          }
+
+          // Future: dashed flatline
           const futurePoints = points.filter(p => !p.filled && !p.current);
           let futurePath = "";
           if (futurePoints.length > 0) {
@@ -594,50 +600,72 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             }
           }
 
-          // Current week glow
           const currentPt = points.find(p => p.current);
+          const pulseSpeed = dims.energy < 30 ? '1s' : dims.energy < 50 ? '1.8s' : '2.5s';
 
           return (
             <div
               aria-label={`Week ${week} of 24`}
-              style={{ marginBottom: 10, display: "flex", justifyContent: "center" }}
+              style={{ marginBottom: 6, display: "flex", flexDirection: "column", alignItems: "center" }}
             >
               <svg
                 width={svgW} height={svgH}
                 viewBox={`0 0 ${svgW} ${svgH}`}
                 style={{ overflow: "visible" }}
               >
-                {/* Future path — dashed, ghostly */}
+                <defs>
+                  <linearGradient id="lifeline-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgba(255,238,210,0.08)" />
+                    <stop offset="100%" stopColor="rgba(255,238,210,0)" />
+                  </linearGradient>
+                </defs>
+
+                {/* Future flatline — gets more ghostly as time runs out */}
                 {futurePath && (
                   <path
                     d={futurePath}
                     fill="none"
-                    stroke="rgba(255,255,255,0.06)"
+                    stroke={`rgba(255,255,255,${futureOpacity})`}
                     strokeWidth={1}
-                    strokeDasharray="3 4"
+                    strokeDasharray={weeksLeft <= 5 ? "2 6" : "3 4"}
                   />
                 )}
 
-                {/* Lifeline — the story so far */}
+                {/* Act dividers */}
+                {[7, 17].map(actWeek => {
+                  const x = pad + actWeek * stepX;
+                  return (
+                    <line key={actWeek}
+                      x1={x} y1={topY - 2} x2={x} y2={baseY + 2}
+                      stroke="rgba(255,255,255,0.04)" strokeWidth={1}
+                    />
+                  );
+                })}
+
+                {/* Area fill — soft gradient under the curve */}
+                {areaPath && (
+                  <path d={areaPath} fill="url(#lifeline-fill)" />
+                )}
+
+                {/* The lifeline itself */}
                 {pathD && (
                   <path
                     d={pathD}
                     fill="none"
-                    stroke="rgba(255,238,210,0.25)"
+                    stroke="rgba(255,238,210,0.3)"
                     strokeWidth={1.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 )}
 
-                {/* Week dots — only for dramatic weeks */}
+                {/* Dramatic week markers */}
                 {points.filter(p => p.filled).map((p, i) => {
                   const emoji = weekLog[i];
                   const isDramatic = emoji === "💀" || emoji === "🏆" || emoji === "🟥";
                   if (!isDramatic) return null;
                   return (
-                    <circle
-                      key={i}
+                    <circle key={i}
                       cx={p.x} cy={p.y}
                       r={emoji === "💀" || emoji === "🏆" ? 2.5 : 1.5}
                       fill={p.color}
@@ -645,37 +673,48 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                   );
                 })}
 
-                {/* Current week — breathing dot */}
+                {/* Current week — breathing dot with glow */}
                 {currentPt && (
                   <>
-                    <circle
-                      cx={currentPt.x} cy={currentPt.y}
-                      r={4}
-                      fill="rgba(255,238,210,0.08)"
-                      style={{ animation: `pulse ${dims.energy < 30 ? '1s' : dims.energy < 50 ? '1.8s' : '2.5s'} infinite` }}
+                    <circle cx={currentPt.x} cy={currentPt.y} r={5}
+                      fill="rgba(255,238,210,0.06)"
+                      style={{ animation: `pulse ${pulseSpeed} infinite` }}
                     />
-                    <circle
-                      cx={currentPt.x} cy={currentPt.y}
-                      r={2}
+                    <circle cx={currentPt.x} cy={currentPt.y} r={2}
                       fill="rgba(255,238,210,0.6)"
-                      style={{ animation: `pulse ${dims.energy < 30 ? '1s' : dims.energy < 50 ? '1.8s' : '2.5s'} infinite` }}
+                      style={{ animation: `pulse ${pulseSpeed} infinite` }}
                     />
                   </>
                 )}
 
-                {/* Act dividers — subtle vertical lines */}
-                {[7, 17].map(actWeek => {
-                  const x = pad + actWeek * stepX;
-                  return (
-                    <line
-                      key={actWeek}
-                      x1={x} y1={topY - 1}
-                      x2={x} y2={baseY + 1}
-                      stroke="rgba(255,255,255,0.04)"
-                      strokeWidth={1}
-                    />
-                  );
-                })}
+                {/* Company name — sits at the current position, your name on your lifeline */}
+                {currentPt && weekLog.length > 0 && (
+                  <text
+                    x={currentPt.x}
+                    y={baseY + 7}
+                    textAnchor="middle"
+                    fill="rgba(255,238,210,0.15)"
+                    fontSize={7}
+                    fontFamily="'JetBrains Mono', monospace"
+                    letterSpacing={0.5}
+                  >
+                    {companyName.length > 14 ? companyName.slice(0, 14) : companyName}
+                  </text>
+                )}
+
+                {/* Weeks remaining — appears in Act 3, the walls closing in */}
+                {weeksLeft <= 6 && weeksLeft > 0 && (
+                  <text
+                    x={svgW - pad}
+                    y={baseY + 7}
+                    textAnchor="end"
+                    fill={weeksLeft <= 3 ? "rgba(248,113,113,0.3)" : "rgba(255,255,255,0.12)"}
+                    fontSize={7}
+                    fontFamily="'JetBrains Mono', monospace"
+                  >
+                    {weeksLeft}w left
+                  </text>
+                )}
               </svg>
             </div>
           );
