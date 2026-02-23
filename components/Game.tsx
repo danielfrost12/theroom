@@ -295,15 +295,13 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     if (!isCustom) {
       (Object.keys(effects) as (keyof GameDimensions)[]).forEach(k => {
         let delta = effects[k] || 0;
-        // Honeymoon protection: cushion in Act 1
+        // Honeymoon protection: slight cushion in Act 1 (10% reduction, not 25%)
         if (delta < 0 && currentAct === 1) {
-          delta = Math.ceil(delta * 0.75);
+          delta = Math.ceil(delta * 0.9);
         }
-        // Momentum dampening: protect dimensions already low (floor protection)
-        if (delta < 0 && newDims[k] < 25) {
-          delta = Math.ceil(delta * 0.4);
-        } else if (delta < 0 && newDims[k] < 40) {
-          delta = Math.ceil(delta * 0.6);
+        // Floor protection: only when truly critical (<15), and modest
+        if (delta < 0 && newDims[k] < 15) {
+          delta = Math.ceil(delta * 0.5);
         }
         newDims[k] = Math.max(0, Math.min(100, newDims[k] + delta));
       });
@@ -326,33 +324,37 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     }
 
     // Natural recovery — your weakest dimension heals slightly each week.
-    // Like sleep, rest, resilience. Prevents death spirals.
+    // Tiny: +1 if below 35. Just enough to prevent instant death spirals,
+    // not enough to bail you out of bad strategy.
     const dimKeys = Object.keys(newDims) as (keyof GameDimensions)[];
     const weakestKey = dimKeys.reduce((a, b) => newDims[a] < newDims[b] ? a : b);
-    if (newDims[weakestKey] < 50) {
-      newDims[weakestKey] = Math.min(50, newDims[weakestKey] + 3);
+    if (newDims[weakestKey] < 35) {
+      newDims[weakestKey] = Math.min(35, newDims[weakestKey] + 1);
     }
 
-    // ARR growth — startup trajectory. Good play should reach $15-25M by week 24.
-    // IPO requires $25M ARR. Acquisition at $15M. Both achievable with solid play.
+    // ARR growth — startup trajectory. Perfect play should reach ~$30-35M by week 24.
+    // IPO requires $30M ARR + week 20+. Most runs should end at $10-20M (time_up).
+    // Growth is mostly LINEAR (additive), not compound. Compounding creates runaway wins.
     const newWeek = week + 1;
     const act = getAct(newWeek);
     let arrDelta: number;
     if (act === 1) {
-      // Early stage: finding product-market fit
-      if (newDims.company >= 45) arrDelta = Math.random() < 0.7 ? 1 : 0;
-      else if (newDims.company >= 30) arrDelta = Math.random() < 0.4 ? 1 : 0;
+      // Early stage: finding product-market fit. Slow, uncertain.
+      if (newDims.company >= 50) arrDelta = Math.random() < 0.6 ? 1 : 0;
+      else if (newDims.company >= 35) arrDelta = Math.random() < 0.3 ? 1 : 0;
       else arrDelta = 0;
     } else if (act === 2) {
-      // Growth stage: acceleration. Lower thresholds, higher caps.
-      const growthRate = newDims.company >= 50 ? 0.12 : newDims.company >= 35 ? 0.06 : 0.01;
-      arrDelta = Math.round(Math.max(arr, 1) * growthRate * (0.5 + Math.random()));
-      arrDelta = Math.min(arrDelta, 5);
+      // Growth stage: additive growth, NOT compound. +1-2/week if company is healthy.
+      if (newDims.company >= 55) arrDelta = Math.random() < 0.8 ? 2 : 1;
+      else if (newDims.company >= 40) arrDelta = Math.random() < 0.6 ? 1 : 0;
+      else if (newDims.company >= 25) arrDelta = Math.random() < 0.3 ? 1 : 0;
+      else arrDelta = Math.random() < 0.3 ? -1 : 0; // Shrinking if company is dying
     } else {
-      // Late stage: momentum-dependent. Big growth if you earned it.
-      const growthRate = newDims.company >= 50 ? 0.15 : newDims.company >= 35 ? 0.07 : -0.02;
-      arrDelta = Math.round(Math.max(arr, 1) * growthRate * (0.5 + Math.random()));
-      arrDelta = Math.min(arrDelta, 8);
+      // Late stage: slightly faster additive. +2-3/week at peak. Penalty if weak.
+      if (newDims.company >= 55) arrDelta = Math.random() < 0.7 ? 3 : 2;
+      else if (newDims.company >= 40) arrDelta = Math.random() < 0.6 ? 2 : 1;
+      else if (newDims.company >= 25) arrDelta = Math.random() < 0.4 ? 1 : 0;
+      else arrDelta = -1; // Company is failing, ARR shrinks
     }
     const newArr = Math.max(0, arr + arrDelta);
 
@@ -452,9 +454,9 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             const burnPerWeek = 40 + Math.floor(newArr * 1.5);
             const revPerWeek = Math.floor(newArr * 1000 / 24);
             const compressedCash = Math.max(0, newCash + skipWeeks * (revPerWeek - burnPerWeek));
-            // Compression ARR: steady compound growth matching the new realistic pace
-            const compGrowthRate = newDims.company >= 50 ? 0.05 : newDims.company >= 35 ? 0.02 : -0.02;
-            const compressedArr = Math.max(0, Math.round(newArr * (1 + compGrowthRate * skipWeeks)));
+            // Compression ARR: additive, matching the linear growth model. +1/week if healthy.
+            const compArrPerWeek = newDims.company >= 50 ? 1 : newDims.company >= 35 ? 0.5 : -0.5;
+            const compressedArr = Math.max(0, Math.round(newArr + compArrPerWeek * skipWeeks));
             const compressedWeek = newWeek + skipWeeks;
 
             const driftDims = { ...newDims };
@@ -647,6 +649,36 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                 </div>
               )}
             </div>
+
+            {/* Week-by-week progress bar */}
+            {weekLog.length > 0 && (
+              <div style={{
+                display: "flex", gap: 3, marginTop: 14, paddingTop: 14,
+                borderTop: "1px solid rgba(255,255,255,0.04)",
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}>
+                {weekLog.map((color, i) => (
+                  <div key={i} style={{
+                    width: 12, height: 12, borderRadius: 2,
+                    background: color === "🟩" ? "rgba(74,222,128,0.6)"
+                      : color === "🟨" ? "rgba(250,204,21,0.6)"
+                      : color === "🟥" ? "rgba(248,113,113,0.6)"
+                      : color === "💀" ? "rgba(248,113,113,0.9)"
+                      : color === "🏆" ? "rgba(74,222,128,0.9)"
+                      : "rgba(255,255,255,0.1)",
+                    transition: "background 0.3s ease",
+                  }} />
+                ))}
+                {/* Empty slots for remaining weeks */}
+                {Array.from({ length: Math.max(0, 24 - weekLog.length) }, (_, i) => (
+                  <div key={`empty-${i}`} style={{
+                    width: 12, height: 12, borderRadius: 2,
+                    background: "rgba(255,255,255,0.04)",
+                  }} />
+                ))}
+              </div>
+            )}
           </div>
           );
         })()}

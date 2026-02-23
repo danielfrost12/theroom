@@ -188,7 +188,7 @@ export const SURPRISE_EVENTS: SurpriseEvent[] = [
     message: "A tweet about your product went viral overnight.",
     subtext: "1,200 signups before coffee.",
     effects: { company: 8, energy: 5 },
-    arrEffect: 3,
+    arrEffect: 1,
     condition: ({ dims, week }) => week >= 3 && dims.company > 55,
     once: "viral_tweet",
   },
@@ -196,7 +196,7 @@ export const SURPRISE_EVENTS: SurpriseEvent[] = [
     message: "Elena closed the biggest deal of the quarter.",
     subtext: "She didn't even tell you. You found out from the CRM.",
     effects: { company: 5, relationships: 5, energy: 3 },
-    arrEffect: 5,
+    arrEffect: 2,
     condition: ({ dims, week }) => week >= 5 && dims.relationships > 50 && dims.company > 40,
     once: "elena_deal",
   },
@@ -220,7 +220,7 @@ export const SURPRISE_EVENTS: SurpriseEvent[] = [
     message: "Your biggest client churned. No warning.",
     subtext: "They switched to the competitor you ignored.",
     effects: { company: -10, relationships: -3 },
-    arrEffect: -8,
+    arrEffect: -3,
     condition: ({ dims, week }) => week >= 6 && dims.company < 35,
     once: "client_churn",
   },
@@ -303,16 +303,16 @@ export const MILESTONES: Milestone[] = [
     once: "arr_5",
   },
   {
-    message: "$10M ARR.",
+    message: "$15M ARR.",
     subtext: "David called to congratulate you. First time he's called just to say 'well done.'",
-    condition: ({ arr }) => arr >= 10,
-    once: "arr_10",
+    condition: ({ arr }) => arr >= 15,
+    once: "arr_15",
   },
   {
-    message: "$25M ARR.",
+    message: "$30M ARR.",
     subtext: "The office is different now. Bigger. Quieter. More strangers.",
-    condition: ({ arr }) => arr >= 25,
-    once: "arr_25",
+    condition: ({ arr }) => arr >= 30,
+    once: "arr_30",
   },
   {
     message: "You survived the honeymoon.",
@@ -335,7 +335,7 @@ export const MILESTONES: Milestone[] = [
   {
     message: "You're profitable.",
     subtext: "Revenue exceeds burn. For the first time, the clock stopped ticking.",
-    condition: ({ arr }) => arr >= 8,
+    condition: ({ arr }) => arr >= 10,
     once: "profitable",
   },
 ];
@@ -704,14 +704,16 @@ export function checkEnding(state: { week: number; cash: number; arr: number; di
   // Grace period: no catastrophic endings before week 4. Let the player feel the game first.
   // Cash can still run out (that's math, not drama) but dimension-based deaths need room to breathe.
   if (week >= 4) {
-    if (dims.energy <= 0) return { type: "burnout", label: "BURNED OUT", emoji: "🔥", line: `Burned out in week ${week}. Company was worth $${Math.round(arr / 10)}M without you.` };
+    if (dims.energy <= 0) return { type: "burnout", label: "BURNED OUT", emoji: "🔥", line: `Burned out in week ${week}. ${arr > 0 ? `Company was doing $${arr}M ARR without you.` : "The company never found its footing."}` };
     if (dims.integrity <= 0) return { type: "disgraced", label: "DISGRACED", emoji: "🪦", line: `Disgraced in week ${week}. The Glassdoor reviews wrote themselves.` };
   }
-  if (cash <= 0) return { type: "bankrupt", label: "BANKRUPT", emoji: "💀", line: `Bankrupt in week ${week}.` };
-  if (week >= 6 && dims.relationships <= 10 && dims.company > 40) return { type: "board_removed", label: "BOARD REMOVED", emoji: "🚪", line: `Board removed you in week ${week}. Company was worth $${Math.round(arr / 8)}M.` };
-  if (arr >= 20 && dims.integrity > 40 && dims.relationships > 30 && dims.energy > 20) return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${week} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
-  if (arr >= 10 && week >= 10) {
-    if (Math.random() < 0.20) return { type: "acquired", label: "ACQUIRED", emoji: "🤝", line: `Acquired for $${Math.round(arr * 2.2)}M in ${week} weeks.` };
+  if (cash <= 0) return { type: "bankrupt", label: "BANKRUPT", emoji: "💀", line: `Bankrupt in week ${week}. ${arr > 0 ? `$${arr}M ARR wasn't enough.` : "Never got off the ground."}` };
+  if (week >= 6 && dims.relationships <= 10 && dims.company > 40) return { type: "board_removed", label: "BOARD REMOVED", emoji: "🚪", line: `Board removed you in week ${week}. ${arr > 0 ? `Company was doing $${arr}M ARR.` : ""}` };
+  // IPO: requires high ARR, late game, AND healthy dimensions. You have to earn this AND survive.
+  if (week >= 20 && arr >= 30 && dims.integrity > 45 && dims.relationships > 35 && dims.energy > 25) return { type: "ipo", label: "IPO", emoji: "🔔", line: `IPO'd at $${Math.round(arr * 3.5)}M in ${week} weeks.${dims.relationships > 65 ? " The whole team was still there." : ""}` };
+  // Acquisition: mid-game exit, probabilistic. Requires real traction.
+  if (arr >= 15 && week >= 14) {
+    if (Math.random() < 0.15) return { type: "acquired", label: "ACQUIRED", emoji: "🤝", line: `Acquired for $${Math.round(arr * 2.2)}M in ${week} weeks.` };
   }
   if (cash < 200 && arr > 3) return { type: "forced_sale", label: "FORCED SALE", emoji: "📉", line: `Forced sale at $${Math.round(arr * 0.8)}M in week ${week}. Took what you could get.` };
   if (week >= TOTAL_WEEKS) {

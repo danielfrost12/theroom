@@ -25,11 +25,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: `https://behindtheroom.com/r/${code}`,
       siteName: 'The Room',
       type: 'website',
+      images: [{
+        url: `https://behindtheroom.com/r/${code}/opengraph-image`,
+        width: 1200,
+        height: 630,
+        alt: `${data.companyName} — ${data.endingLabel}`,
+      }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      images: [`https://behindtheroom.com/r/${code}/opengraph-image`],
     },
   };
 }
