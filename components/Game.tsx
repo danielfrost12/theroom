@@ -408,11 +408,11 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       choice, newDims, week, companyName
     );
 
-    // Enforce narrative brevity — truncate to 3 sentences max, 60 words max
+    // Enforce narrative brevity — 2 sentences max, 35 words max. A flash, not a paragraph.
     const sentences = narrativeText.match(/[^.!?]+[.!?]+/g) || [narrativeText];
-    let truncated = sentences.slice(0, 3).join(' ').trim();
+    let truncated = sentences.slice(0, 2).join(' ').trim();
     const words = truncated.split(/\s+/);
-    if (words.length > 60) truncated = words.slice(0, 60).join(' ') + '.';
+    if (words.length > 35) truncated = words.slice(0, 35).join(' ') + '.';
     setNarrative(truncated);
     setShowBreathing(false);
     setLoading(false);
@@ -480,9 +480,19 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       };
     }
 
-    // Show "tap to continue" after reading pause — act-scaled + consequence bonus
-    const readDelay = isConsequence ? actTempo.narrativeTapDelay + 700 : actTempo.narrativeTapDelay;
-    addTimeout(() => setWaitingForTap(true), readDelay);
+    // Auto-advance: narrative holds based on word count, then transitions.
+    // No "tap to continue" — the story pulls you forward. Still tappable for impatient players.
+    const wordCount = truncated.split(/\s+/).length;
+    const readingMs = Math.max(2200, Math.min(wordCount * 80, 5000)); // 80ms/word, clamped 2.2-5s
+    const baseDelay = isConsequence ? readingMs + 800 : readingMs;
+    addTimeout(() => setWaitingForTap(true), baseDelay);
+    // Auto-continue after an additional pause — the player never has to tap
+    addTimeout(() => {
+      if (pendingContinueRef.current) {
+        pendingContinueRef.current();
+        pendingContinueRef.current = null;
+      }
+    }, baseDelay + 2500);
   };
 
   const handleContinue = () => {
@@ -730,26 +740,30 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
           </div>
         )}
 
-        {/* Narrative result — tap to continue */}
+        {/* Narrative flash — short, visual, auto-advances. Tap anywhere to skip. */}
         {narrative && !showBreathing && !compressing && (
           <div
-            onClick={waitingForTap ? handleContinue : undefined}
-            onKeyDown={waitingForTap ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleContinue(); } } : undefined}
-            role={waitingForTap ? "button" : undefined}
-            tabIndex={waitingForTap ? 0 : undefined}
-            aria-label={waitingForTap ? "Continue to next week" : undefined}
+            onClick={handleContinue}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleContinue(); } }}
+            role="button"
+            tabIndex={0}
+            aria-label="Continue to next week"
             style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 20, padding: "24px 22px", marginBottom: 20,
-              animation: "fadeUp 0.6s ease",
-              cursor: waitingForTap ? "pointer" : "default",
-              transition: "border-color 0.3s ease",
+              padding: "20px 8px", marginBottom: 20,
+              animation: "fadeUp 0.5s ease",
+              cursor: "pointer",
+              textAlign: "center",
             }}
           >
             <div style={{
-              fontSize: 15, color: "rgba(255,255,255,0.8)",
-              lineHeight: 1.7, fontFamily: FONTS.body,
+              fontSize: "clamp(15px, 3.5vw, 17px)",
+              color: "rgba(255,255,255,0.65)",
+              lineHeight: 1.8,
+              fontFamily: FONTS.display,
+              fontStyle: "italic",
+              fontWeight: 300,
+              maxWidth: 380,
+              margin: "0 auto",
             }}>
               {narrative}
             </div>
@@ -767,20 +781,20 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                 </div>
               </div>
             )}
+            {/* Subtle progress indicator — a thin line that fills as auto-advance approaches */}
             {waitingForTap && (
               <div style={{
-                marginTop: 18, textAlign: "center",
-                opacity: 0, animation: "fadeUp 0.5s ease 0.2s forwards",
+                marginTop: 16,
+                height: 1,
+                background: "rgba(255,255,255,0.04)",
+                borderRadius: 1,
+                overflow: "hidden",
               }}>
-                <span style={{
-                  fontSize: 12,
-                  color: COLORS.warmMuted,
-                  fontFamily: FONTS.mono,
-                  letterSpacing: "1px",
-                  animation: "pulse 3s ease-in-out infinite",
-                }}>
-                  tap to continue
-                </span>
+                <div style={{
+                  height: "100%",
+                  background: "rgba(255,238,210,0.15)",
+                  animation: "fillLine 2.5s linear forwards",
+                }} />
               </div>
             )}
           </div>

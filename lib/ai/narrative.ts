@@ -44,11 +44,14 @@ export function getFallbackNarrative(choice: string, context: string): string {
   void context;
   void choice;
   const narratives = [
-    "The office went quiet after you said it. Marcus looked up from his screen. Priya nodded slowly.",
-    "The decision landed quietly. Elena reacted first — a half-smile that could mean anything. Slack went silent.",
-    "Your co-founder exhaled. The engineer in the corner paused mid-keystroke, then kept typing.",
-    "Nobody said anything for a long moment. Then Priya picked up her coffee and walked to the whiteboard.",
-    "The room shifted. You could feel it in the way people moved — faster, or slower. Something changed.",
+    "Marcus looks up. Priya doesn't.",
+    "Slack goes quiet. Elena's typing indicator disappears.",
+    "Priya exhales. The whiteboard marker is already in her hand.",
+    "The room shifts. Nobody makes eye contact.",
+    "David's read receipt appears. No reply.",
+    "Marcus nods once. That's enough.",
+    "Elena closes her laptop. Slowly.",
+    "You hear Priya laugh in the next room. It doesn't sound happy.",
   ];
   return narratives[Math.floor(Math.random() * narratives.length)];
 }

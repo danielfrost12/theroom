@@ -113,3 +113,9 @@ input, select, textarea {
   0%, 100% { opacity: 0.85; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.03); }
 }
+
+/* Narrative auto-advance — thin line fills left to right */
+@keyframes fillLine {
+  from { width: 0; }
+  to { width: 100%; }
+}

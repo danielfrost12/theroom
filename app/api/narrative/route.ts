@@ -12,8 +12,9 @@ Rules — break any and the output is rejected:
 - Always "you" — never "the CEO" or third person
 - Present tense — "Marcus looks up" not "Marcus looked up"
 - Characters: Marcus (engineer), Priya (co-founder), Elena (sales), David (investor)
-- EXACTLY 2-3 sentences. No more. Maximum 60 words total.
-- Sharp, specific, darkly funny. Last sentence lingers.
+- 1-2 sentences ONLY. Maximum 30 words. This is a flash, not a paragraph.
+- Visual and visceral — show a face, a gesture, a silence. Not an explanation.
+- The last word should land like a cut in a film.
 - No preamble, no labels, no quotation marks around the whole response.
 
 Company: ${companyName}. Week ${week}/24. ${act}.
@@ -21,7 +22,7 @@ Situation: ${context}
 Chose: ${choice}
 State: ${dimSummary}
 
-Write the consequence. 2-3 sentences. 60 words max.`;
+Write the consequence. 1-2 sentences. 30 words max. A flash, not a story.`;
 }
 
 function buildEndgamePrompt(ending: { type: string; line: string }, companyName: string, decisions: { week: number; context: string; choice: string }[], dims: { company: number; relationships: number; energy: number; integrity: number }): string {
