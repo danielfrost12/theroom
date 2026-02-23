@@ -313,92 +313,105 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
         {showNameInput && (
           <div style={{
             maxWidth: 440, width: "100%",
-            animation: "fadeUp 0.8s ease",
+            animation: "fadeUp 1s ease",
           }}>
-            {/* Frosted glass panel */}
+            {/* The naming moment — feels like writing on a whiteboard, not filling a form */}
             <div style={{
-              background: "rgba(255,255,255,0.04)",
-              borderRadius: 24,
-              border: "1px solid rgba(255,255,255,0.08)",
-              padding: "40px 32px 36px",
+              padding: "0 8px",
               textAlign: "center",
             }}>
               <div style={{
-                fontSize: 16,
-                color: "rgba(255,255,255,0.85)",
-                marginBottom: 6,
-                lineHeight: 1.6,
-                fontFamily: FONTS.body,
+                fontFamily: FONTS.display,
+                fontSize: "clamp(15px, 3vw, 17px)",
+                color: "rgba(255,255,255,0.5)",
+                fontStyle: "italic",
+                fontWeight: 300,
+                lineHeight: 1.7,
+                marginBottom: 40,
               }}>
-                That was one decision. You have twenty-four weeks. That&apos;s all you get.
+                That was one decision. You&apos;ll make twenty-three more.
               </div>
-              <div style={{
-                fontSize: 12,
-                color: "rgba(255,255,255,0.3)",
-                marginBottom: 36,
-                fontFamily: FONTS.mono,
-                letterSpacing: "0.5px",
-              }}>
-                ~10 min · 24 weeks · ∞ endings
-              </div>
-              <div style={{ marginBottom: 28 }}>
-                <label
-                  htmlFor="company-name"
-                  style={{
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.4)",
-                  marginBottom: 10,
-                  display: "block",
-                  fontFamily: FONTS.mono,
-                  letterSpacing: "1.5px",
-                  textTransform: "uppercase",
-                }}>
-                  Name your company
-                </label>
+
+              {/* The input — large, breathing, feels like naming something real */}
+              <div style={{ marginBottom: 12 }}>
                 <input
                   id="company-name"
                   value={companyName}
                   onChange={e => setCompanyName(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleStart()}
-                  placeholder="e.g. Nova AI"
+                  placeholder="Name your company"
                   autoFocus
+                  maxLength={28}
                   style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    borderRadius: 12,
-                    padding: "16px 20px",
+                    background: "transparent",
+                    border: "none",
+                    borderBottom: "1px solid rgba(255,255,255,0.15)",
+                    padding: "12px 0",
                     width: "100%",
-                    maxWidth: 300,
-                    fontSize: 20,
+                    maxWidth: 320,
+                    fontSize: "clamp(24px, 6vw, 32px)",
                     color: "#fff",
                     textAlign: "center",
                     fontFamily: FONTS.display,
+                    fontWeight: 600,
+                    letterSpacing: "-0.5px",
                     outline: "none",
-                    transition: "border-color 0.3s ease",
+                    transition: "border-color 0.4s ease",
+                    caretColor: "rgba(255,238,210,0.6)",
                   }}
-                  onFocus={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"}
-                  onBlur={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"}
+                  onFocus={e => e.currentTarget.style.borderColor = "rgba(255,238,210,0.3)"}
+                  onBlur={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"}
                 />
               </div>
-              <button
-                onClick={handleStart}
-                disabled={!companyName.trim()}
-                style={{
-                  background: companyName.trim() ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.08)",
-                  color: companyName.trim() ? "#0a0a0f" : "rgba(255,255,255,0.25)",
-                  border: "none",
-                  padding: "14px 44px",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  borderRadius: 50,
-                  cursor: companyName.trim() ? "pointer" : "default",
-                  fontFamily: FONTS.body,
-                  transition: "all 0.4s ease",
-                  letterSpacing: "0.3px",
-                }}
-              >
-                Begin
-              </button>
+
+              {/* The button — only visible when they've named it */}
+              <div style={{
+                opacity: companyName.trim() ? 1 : 0,
+                transform: companyName.trim() ? "translateY(0)" : "translateY(8px)",
+                transition: "all 0.5s ease",
+                marginTop: 32,
+              }}>
+                <button
+                  onClick={handleStart}
+                  disabled={!companyName.trim()}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    color: "rgba(255,255,255,0.7)",
+                    padding: "14px 44px",
+                    fontSize: 15,
+                    fontWeight: 500,
+                    borderRadius: 50,
+                    cursor: companyName.trim() ? "pointer" : "default",
+                    fontFamily: FONTS.body,
+                    transition: "all 0.4s ease",
+                    letterSpacing: "0.3px",
+                  }}
+                  onMouseEnter={e => {
+                    if (companyName.trim()) {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
+                      e.currentTarget.style.color = "#fff";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+                    e.currentTarget.style.color = "rgba(255,255,255,0.7)";
+                  }}
+                >
+                  Begin
+                </button>
+                <div style={{
+                  fontSize: 11,
+                  color: "rgba(255,255,255,0.2)",
+                  marginTop: 12,
+                  fontFamily: FONTS.mono,
+                  letterSpacing: "0.5px",
+                }}>
+                  24 weeks &middot; no going back
+                </div>
+              </div>
             </div>
           </div>
         )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, ReactNode } from 'react';
 import { useGameState } from '@/hooks/useGameState';
+import { Onboarding } from '@/components/Onboarding';
 import { CinematicOpening } from '@/components/CinematicOpening';
 import { Game } from '@/components/Game';
 import { Endgame } from '@/components/Endgame';
@@ -92,7 +93,17 @@ export default function Page() {
       opacity: fading ? 0 : 1,
       transition: `opacity ${TEMPO.fadeOut}ms ease`,
     }}>
-      {(activeScreen === 'onboarding' || activeScreen === 'cinema') && (
+      {activeScreen === 'onboarding' && (
+        <ScreenTransition screenKey="onboarding">
+          <Onboarding onStart={() => {
+            transitionTo(() => {
+              setScreen('cinema');
+            });
+          }} />
+        </ScreenTransition>
+      )}
+
+      {activeScreen === 'cinema' && (
         <ScreenTransition screenKey="cinema">
           <CinematicOpening onComplete={(name, choice) => {
             transitionTo(() => {

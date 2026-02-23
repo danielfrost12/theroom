@@ -105,7 +105,7 @@ export function ShareImage({
       if (navigator.share) {
         const sharePayload: ShareData2 = {
           title: `${companyName} — ${ending.label}`,
-          text: `I built ${companyName}. ${ending.line}\nCan you do better?`,
+          text: `I built ${companyName}. ${weekLog.length} weeks. ${ending.line}\nCan you do better?`,
           url: shareUrl,
         };
         try {
@@ -120,7 +120,7 @@ export function ShareImage({
       } else {
         // Desktop fallback: copy share URL to clipboard, download image
         try {
-          await navigator.clipboard.writeText(`I built ${companyName}. ${ending.line}\nCan you do better?\n${shareUrl}`);
+          await navigator.clipboard.writeText(`I built ${companyName}. ${weekLog.length} weeks. ${ending.line}\nCan you do better?\n${shareUrl}`);
         } catch { /* clipboard may not be available */ }
         const link = document.createElement('a');
         link.download = `theroom-${companyName.toLowerCase().replace(/\s+/g, '-')}.png`;
@@ -368,7 +368,7 @@ export function ShareImage({
                 fontFamily: "'JetBrains Mono', monospace",
                 letterSpacing: "0.5px",
               }}>
-                {weekLog.length} weeks. {dims.relationships > dims.company ? "Chose the people." : dims.integrity > dims.company ? "Chose the truth." : "Chose the product."}
+                {weekLog.length} weeks. {dims.relationships > dims.company ? `Chose my people over ${companyName}.` : dims.integrity > dims.company ? "Chose the truth. It cost everything." : dims.energy < 35 ? "Gave everything. Had nothing left." : `Built ${companyName}. Paid the price.`}
               </div>
             </div>
 

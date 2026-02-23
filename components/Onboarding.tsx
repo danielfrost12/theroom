@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FONTS } from '@/lib/game/constants';
-import { getPlayerStats, getCollectionStats } from '@/lib/game/stats';
+import { getPlayerStats, getCollectionStats, getLastPlay } from '@/lib/game/stats';
 
 interface OnboardingProps {
   onStart: () => void;
@@ -12,16 +12,48 @@ export function Onboarding({ onStart }: OnboardingProps) {
   const [phase, setPhase] = useState(0);
   const stats = getPlayerStats();
   const collection = stats.isReturning ? getCollectionStats() : null;
+  const lastPlay = stats.isReturning ? getLastPlay() : null;
 
   useEffect(() => {
-    const timers = [
-      setTimeout(() => setPhase(1), 400),
-      setTimeout(() => setPhase(2), 1800),
-      setTimeout(() => setPhase(3), 3200),
-      setTimeout(() => setPhase(4), 4600),
-    ];
+    const timers = stats.isReturning
+      ? [
+          setTimeout(() => setPhase(1), 400),
+          setTimeout(() => setPhase(2), 1600),
+          setTimeout(() => setPhase(3), 3000),
+          setTimeout(() => setPhase(4), 4200),
+        ]
+      : [
+          setTimeout(() => setPhase(1), 600),
+          setTimeout(() => setPhase(2), 2200),
+          setTimeout(() => setPhase(3), 4000),
+          setTimeout(() => setPhase(4), 5800),
+        ];
     return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // What haunts the returning player — specific regret from their last game
+  const hauntLine = (() => {
+    if (!lastPlay) return null;
+    switch (lastPlay.ending) {
+      case 'burnout':
+        return "Last time, you didn't stop. You knew. Everyone knew.";
+      case 'bankrupt':
+        return `${lastPlay.companyName || 'Your company'} ran out of time. You always wonder if one more week would have changed it.`;
+      case 'disgraced':
+        return "You told yourself it was one small compromise. It wasn't.";
+      case 'board_removed':
+        return "They took it from you. The company you built. They said it was necessary.";
+      case 'forced_sale':
+        return "You signed it away. The term sheet felt like a death certificate.";
+      case 'ipo':
+        return `${lastPlay.companyName || 'Your company'} made it. But you left something behind to get there.`;
+      case 'acquired':
+        return "They bought it. Everyone celebrated. You felt nothing.";
+      default:
+        return "Time ran out. The story ended mid-sentence.";
+    }
+  })();
 
   return (
     <div
@@ -66,150 +98,194 @@ export function Onboarding({ onStart }: OnboardingProps) {
         fontFamily: FONTS.body,
         boxSizing: "border-box",
       }}>
-        {/* Phase 1: Ambient scene-setting text */}
-        <div style={{
-          opacity: phase >= 1 ? 1 : 0,
-          transform: phase >= 1 ? "translateY(0)" : "translateY(12px)",
-          transition: "all 1.5s ease",
-          marginBottom: 20,
-        }}>
-          <div style={{
-            fontFamily: FONTS.display,
-            fontSize: "clamp(14px, 2.5vw, 16px)",
-            color: "rgba(255,255,255,0.75)",
-            fontStyle: "italic",
-            fontWeight: 300,
-            lineHeight: 1.7,
-            letterSpacing: "0.3px",
-            textShadow: "0 1px 8px rgba(0,0,0,0.5)",
-          }}>
-            {stats.isReturning
-              ? "You know this feeling. The laptop. The choices. The weight."
-              : "Monday morning. First day. The office smells like fresh paint and coffee."}
-          </div>
-        </div>
+        {/* --- FIRST-TIME PLAYER --- */}
+        {!stats.isReturning && (
+          <>
+            {/* Phase 1: The identity hook — make them feel like a founder before they know it's a game */}
+            <div style={{
+              opacity: phase >= 1 ? 1 : 0,
+              transform: phase >= 1 ? "translateY(0)" : "translateY(12px)",
+              transition: "all 1.5s ease",
+              marginBottom: 20,
+            }}>
+              <div style={{
+                fontFamily: FONTS.display,
+                fontSize: "clamp(15px, 3vw, 18px)",
+                color: "rgba(255,255,255,0.6)",
+                fontStyle: "italic",
+                fontWeight: 300,
+                lineHeight: 1.7,
+                letterSpacing: "0.3px",
+                textShadow: "0 1px 8px rgba(0,0,0,0.5)",
+              }}>
+                Everyone thinks they could run a company.
+              </div>
+            </div>
 
-        {/* Phase 2: Title */}
-        <div style={{
-          opacity: phase >= 2 ? 1 : 0,
-          transform: phase >= 2 ? "translateY(0)" : "translateY(12px)",
-          transition: "all 1.2s ease",
-          marginBottom: 12,
-        }}>
-          <h1 style={{
-            fontFamily: FONTS.display,
-            fontSize: "clamp(36px, 8vw, 56px)",
-            fontWeight: 700,
-            color: "#fff",
-            letterSpacing: "-1.5px",
-            lineHeight: 1.05,
-          }}>
-            The Room
-          </h1>
-          <p style={{
-            fontSize: 15,
-            color: "rgba(255,255,255,0.55)",
-            fontWeight: 300,
-            marginTop: 6,
-            lineHeight: 1.4,
-          }}>
-            Build a company. See how the story ends.
-          </p>
-        </div>
+            {/* Phase 2: The turn */}
+            <div style={{
+              opacity: phase >= 2 ? 1 : 0,
+              transform: phase >= 2 ? "translateY(0)" : "translateY(12px)",
+              transition: "all 1.5s ease",
+              marginBottom: 28,
+            }}>
+              <div style={{
+                fontFamily: FONTS.display,
+                fontSize: "clamp(15px, 3vw, 18px)",
+                color: "rgba(255,238,210,0.8)",
+                fontStyle: "italic",
+                fontWeight: 300,
+                lineHeight: 1.7,
+              }}>
+                24 weeks. 24 decisions. One ending you didn&apos;t see coming.
+              </div>
+            </div>
 
-        {/* Phase 3: Social proof */}
-        <div style={{
-          opacity: phase >= 3 ? 1 : 0,
-          transform: phase >= 3 ? "translateY(0)" : "translateY(8px)",
-          transition: "all 1s ease",
-          marginBottom: 24,
-        }}>
-          <div style={{
-            display: "flex", gap: 16, flexWrap: "wrap",
-          }}>
-            {stats.isReturning && collection ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {/* Personal best + runs */}
-                <div style={{ display: "flex", gap: 16 }}>
-                  <div>
-                    <span style={{
-                      fontFamily: FONTS.mono, fontSize: 14, fontWeight: 700, color: "#fff",
-                    }}>${stats.bestValuation}M</span>
-                    <span style={{
-                      fontSize: 11, color: "rgba(255,255,255,0.35)", marginLeft: 5,
-                    }}>best</span>
+            {/* Phase 3: Title — appears like a name on a door */}
+            <div style={{
+              opacity: phase >= 3 ? 1 : 0,
+              transform: phase >= 3 ? "translateY(0)" : "translateY(12px)",
+              transition: "all 1.2s ease",
+              marginBottom: 12,
+            }}>
+              <h1 style={{
+                fontFamily: FONTS.display,
+                fontSize: "clamp(36px, 8vw, 56px)",
+                fontWeight: 700,
+                color: "#fff",
+                letterSpacing: "-1.5px",
+                lineHeight: 1.05,
+              }}>
+                The Room
+              </h1>
+              <p style={{
+                fontSize: 13,
+                color: "rgba(255,255,255,0.35)",
+                fontWeight: 300,
+                marginTop: 8,
+                lineHeight: 1.4,
+                fontFamily: FONTS.mono,
+                letterSpacing: "0.5px",
+              }}>
+                ~10 min &middot; &infin; endings &middot; no right answers
+              </p>
+            </div>
+          </>
+        )}
+
+        {/* --- RETURNING PLAYER --- */}
+        {stats.isReturning && collection && (
+          <>
+            {/* Phase 1: The haunt — specific memory from their last game */}
+            <div style={{
+              opacity: phase >= 1 ? 1 : 0,
+              transform: phase >= 1 ? "translateY(0)" : "translateY(12px)",
+              transition: "all 1.5s ease",
+              marginBottom: 20,
+            }}>
+              <div style={{
+                fontFamily: FONTS.display,
+                fontSize: "clamp(14px, 2.5vw, 16px)",
+                color: "rgba(255,238,210,0.6)",
+                fontStyle: "italic",
+                fontWeight: 300,
+                lineHeight: 1.7,
+                letterSpacing: "0.3px",
+                textShadow: "0 1px 8px rgba(0,0,0,0.5)",
+              }}>
+                {hauntLine}
+              </div>
+            </div>
+
+            {/* Phase 2: Title + personal record */}
+            <div style={{
+              opacity: phase >= 2 ? 1 : 0,
+              transform: phase >= 2 ? "translateY(0)" : "translateY(12px)",
+              transition: "all 1.2s ease",
+              marginBottom: 16,
+            }}>
+              <h1 style={{
+                fontFamily: FONTS.display,
+                fontSize: "clamp(36px, 8vw, 56px)",
+                fontWeight: 700,
+                color: "#fff",
+                letterSpacing: "-1.5px",
+                lineHeight: 1.05,
+              }}>
+                The Room
+              </h1>
+              <div style={{
+                display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap",
+              }}>
+                <div>
+                  <span style={{
+                    fontFamily: FONTS.mono, fontSize: 14, fontWeight: 700, color: "#fff",
+                  }}>${stats.bestValuation}M</span>
+                  <span style={{
+                    fontSize: 11, color: "rgba(255,255,255,0.3)", marginLeft: 5,
+                  }}>best</span>
+                </div>
+                <div>
+                  <span style={{
+                    fontFamily: FONTS.mono, fontSize: 14, fontWeight: 700, color: "#fff",
+                  }}>{stats.totalPlayers}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Phase 3: Collection — what's still undiscovered */}
+            <div style={{
+              opacity: phase >= 3 ? 1 : 0,
+              transform: phase >= 3 ? "translateY(0)" : "translateY(8px)",
+              transition: "all 1s ease",
+              marginBottom: 24,
+            }}>
+              {/* Archetypes */}
+              {collection.archetypesRemaining.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{
+                    fontSize: 10, fontFamily: FONTS.mono, color: "rgba(255,255,255,0.2)",
+                    letterSpacing: "1.5px", marginBottom: 6,
+                  }}>
+                    {collection.archetypesCollected.length} / 7 ARCHETYPES
                   </div>
-                  <div>
-                    <span style={{
-                      fontFamily: FONTS.mono, fontSize: 14, fontWeight: 700, color: "#fff",
-                    }}>{stats.totalPlayers}</span>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {collection.archetypesCollected.map(a => (
+                      <span key={a} style={{
+                        fontSize: 10, fontFamily: FONTS.mono,
+                        color: "rgba(255,238,210,0.5)",
+                        padding: "3px 8px",
+                        borderRadius: 4,
+                        background: "rgba(255,238,210,0.06)",
+                      }}>{a.replace('The ', '')}</span>
+                    ))}
+                    {collection.archetypesRemaining.slice(0, 3).map((_, i) => (
+                      <span key={i} style={{
+                        fontSize: 10, fontFamily: FONTS.mono,
+                        color: "rgba(255,255,255,0.12)",
+                        padding: "3px 8px",
+                        borderRadius: 4,
+                        border: "1px dashed rgba(255,255,255,0.08)",
+                      }}>?</span>
+                    ))}
                   </div>
                 </div>
+              )}
 
-                {/* Collection — what you haven't done yet (the pull to come back) */}
-                {collection.archetypesRemaining.length > 0 && (
-                  <div>
-                    <div style={{
-                      fontSize: 10, fontFamily: FONTS.mono, color: "rgba(255,255,255,0.2)",
-                      letterSpacing: "1.5px", marginBottom: 6,
-                    }}>
-                      {collection.archetypesCollected.length} / 7 ARCHETYPES
-                    </div>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {collection.archetypesCollected.map(a => (
-                        <span key={a} style={{
-                          fontSize: 10, fontFamily: FONTS.mono,
-                          color: "rgba(255,238,210,0.5)",
-                          padding: "3px 8px",
-                          borderRadius: 4,
-                          background: "rgba(255,238,210,0.06)",
-                        }}>{a.replace('The ', '')}</span>
-                      ))}
-                      {collection.archetypesRemaining.slice(0, 3).map(a => (
-                        <span key={a} style={{
-                          fontSize: 10, fontFamily: FONTS.mono,
-                          color: "rgba(255,255,255,0.12)",
-                          padding: "3px 8px",
-                          borderRadius: 4,
-                          border: "1px dashed rgba(255,255,255,0.08)",
-                        }}>?</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              {/* Endings discovered */}
+              {collection.endingsRemaining.length > 0 && (
+                <div style={{
+                  fontSize: 11, fontFamily: FONTS.mono,
+                  color: "rgba(255,255,255,0.2)",
+                }}>
+                  {collection.endingsCollected.length} / 8 endings discovered
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
-                {/* Unfinished business — endings you haven't seen */}
-                {collection.endingsRemaining.length > 0 && collection.endingsRemaining.length <= 5 && (
-                  <div style={{
-                    fontSize: 11, fontFamily: FONTS.mono,
-                    color: "rgba(255,255,255,0.2)",
-                  }}>
-                    {collection.endingsCollected.length} / 8 endings discovered
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                {[
-                  { n: stats.totalPlayers, label: "CEOs played" },
-                  { n: stats.avgWeeks, label: "avg lasted" },
-                  { n: stats.ipoRate, label: "made it to IPO" },
-                ].map((s, i) => (
-                  <div key={i}>
-                    <span style={{
-                      fontFamily: FONTS.mono, fontSize: 14, fontWeight: 700, color: "#fff",
-                    }}>{s.n}</span>
-                    <span style={{
-                      fontSize: 11, color: "rgba(255,255,255,0.35)", marginLeft: 5,
-                    }}>{s.label}</span>
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Phase 4: Entry prompt */}
+        {/* Phase 4: Entry prompt — the same for everyone */}
         <div style={{
           opacity: phase >= 4 ? 1 : 0,
           transition: "opacity 1.2s ease",
@@ -230,14 +306,6 @@ export function Onboarding({ onStart }: OnboardingProps) {
             }}>
               {stats.isReturning ? "TAP ANYWHERE TO TRY AGAIN" : "TAP ANYWHERE TO BEGIN"}
             </span>
-          </div>
-          <div style={{
-            fontSize: 11,
-            color: "rgba(255,255,255,0.20)",
-            marginTop: 6,
-            fontFamily: FONTS.mono,
-          }}>
-            ~10 min &middot; 24 weeks &middot; &infin; endings
           </div>
         </div>
       </div>

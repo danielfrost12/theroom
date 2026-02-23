@@ -521,30 +521,58 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
         display: "flex", flexDirection: "column",
       }}>
 
-        {/* Progress Gravity — 24 dots. No numbers. You feel where you are.
-            Filled dots carry the color of what happened that week. */}
+        {/* Progress Heartbeat — 24 bars. Not dots. An EKG of your company.
+            Height varies by week intensity. Act breaks create breathing room.
+            The current bar pulses at the tempo of your stress. */}
         <div
           aria-label={`Week ${week} of 24`}
           style={{
-            display: "flex", justifyContent: "flex-end", gap: 3,
-            marginBottom: 8,
-            opacity: week <= 7 ? 0.6 : week <= 17 ? 0.5 : 0.4,
-            transition: "opacity 2s ease",
+            display: "flex", alignItems: "flex-end", justifyContent: "center",
+            gap: 2,
+            marginBottom: 10,
+            height: 20,
+            padding: "0 4px",
           }}
         >
           {Array.from({ length: 24 }).map((_, i) => {
             const isFilled = i < weekLog.length;
             const isCurrent = i === weekLog.length;
+            const isFuture = i > weekLog.length;
+            const isActBreak = i === 7 || i === 17; // gaps between acts
+
+            // Height varies by what happened — dramatic weeks spike
+            let height = 5; // base
+            if (isFilled) {
+              const emoji = weekLog[i];
+              if (emoji === "💀") height = 16;       // death spike
+              else if (emoji === "🏆") height = 14;   // triumph spike
+              else if (emoji === "🟥") height = 11;   // bad week — taller
+              else if (emoji === "🟨") height = 7;    // neutral
+              else height = 5 + (i % 3);                  // good weeks — low, calm, slight variation
+            } else if (isCurrent) {
+              // Current bar pulses — height based on overall tension
+              const minDim = Math.min(dims.company, dims.relationships, dims.energy, dims.integrity);
+              height = minDim < 30 ? 14 : minDim < 50 ? 10 : 6;
+            } else {
+              height = 3; // future — barely there
+            }
+
             return (
               <div key={i} style={{
-                width: 5, height: 5, borderRadius: 1.5,
+                width: 4,
+                height,
+                borderRadius: 1,
                 background: isFilled
                   ? weekDotColor(weekLog[i])
                   : isCurrent
-                    ? "rgba(255,238,210,0.4)"
-                    : "rgba(255,255,255,0.06)",
-                transition: "background 0.5s ease",
-                animation: isCurrent ? "pulse 2.5s infinite" : "none",
+                    ? "rgba(255,238,210,0.5)"
+                    : "rgba(255,255,255,0.04)",
+                transition: "all 0.6s ease",
+                animation: isCurrent
+                  ? `pulse ${dims.energy < 30 ? '1s' : dims.energy < 50 ? '1.8s' : '2.5s'} infinite`
+                  : "none",
+                opacity: isFuture ? 0.5 : 1,
+                marginRight: isActBreak ? 6 : 0, // breathing room at act transitions
               }} />
             );
           })}
@@ -611,91 +639,12 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             </div>
 
             {/* Four dimensions */}
-            <div style={{ marginBottom: weekLog.length > 0 ? 14 : 0, opacity: viz.dims, transition: "opacity 2s ease" }}>
+            <div style={{ opacity: viz.dims, transition: "opacity 2s ease" }}>
               <DimBar label="Company" value={dims.company} hideValue={!viz.dimValues} />
               <DimBar label="People" value={dims.relationships} hideValue={!viz.dimValues} />
               <DimBar label="Energy" value={dims.energy} hideValue={!viz.dimValues} />
               <DimBar label="Ethics" value={dims.integrity} hideValue={!viz.dimValues} />
             </div>
-
-            {/* Journey timeline */}
-            {weekLog.length > 0 && (() => {
-              const avg = (dims.company + dims.relationships + dims.energy + dims.integrity) / 4;
-              const trend = weekLog.length >= 2
-                ? (() => {
-                    const recent = weekLog.slice(-3);
-                    const goodCount = recent.filter(w => w === "\u{1F7E9}" || w === "\u{1F3C6}").length;
-                    const badCount = recent.filter(w => w === "\u{1F7E5}" || w === "\u{1F480}").length;
-                    if (goodCount > badCount) return "up";
-                    if (badCount > goodCount) return "down";
-                    return "flat";
-                  })()
-                : "flat";
-              const trendArrow = trend === "up" ? "\u2191" : trend === "down" ? "\u2193" : "\u2192";
-              const trendColor = trend === "up"
-                ? "rgba(134,239,172,0.8)"
-                : trend === "down"
-                  ? "rgba(248,113,113,0.8)"
-                  : "rgba(255,255,255,0.3)";
-
-              return (
-                <div style={{
-                  paddingTop: 14,
-                  borderTop: "1px solid rgba(255,255,255,0.04)",
-                  opacity: viz.timeline,
-                  transition: "opacity 2s ease",
-                }}>
-                  <div style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                    marginBottom: 10,
-                  }}>
-                    <span style={{
-                      fontSize: 11, color: "rgba(255,255,255,0.3)",
-                      fontFamily: FONTS.mono,
-                    }}>
-                      {weekLog.length} week{weekLog.length !== 1 ? "s" : ""}
-                    </span>
-                    <span style={{
-                      fontSize: 12, fontFamily: FONTS.mono,
-                      color: trendColor,
-                      display: "flex", alignItems: "center", gap: 4,
-                    }}>
-                      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>overall</span>
-                      <span style={{ fontWeight: 600 }}>{Math.round(avg)}</span>
-                      <span>{trendArrow}</span>
-                    </span>
-                  </div>
-                  <div
-                    aria-label={`Journey progress: ${weekLog.length} weeks`}
-                    style={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "flex-start" }}
-                  >
-                    {weekLog.map((w, i) => {
-                      let color = "rgba(134,239,172,0.5)";
-                      let size = 7;
-                      if (w === "\u{1F7E8}") { color = "rgba(253,224,71,0.55)"; }
-                      else if (w === "\u{1F7E5}") { color = "rgba(248,113,113,0.6)"; }
-                      else if (w === "\u{1F480}") { color = "rgba(248,113,113,0.9)"; size = 9; }
-                      else if (w === "\u{1F3C6}") { color = "rgba(250,204,21,0.85)"; size = 9; }
-                      const isLatest = i === weekLog.length - 1;
-                      return (
-                        <div key={i} aria-hidden="true" style={{
-                          width: size, height: size, borderRadius: 2,
-                          background: color, transition: "all 0.3s ease",
-                          opacity: isLatest ? 1 : 0.7 + (i / weekLog.length) * 0.3,
-                          animation: isLatest ? "pulse 2s infinite" : "none",
-                        }} />
-                      );
-                    })}
-                    {Array.from({ length: Math.max(0, 24 - weekLog.length) }).map((_, i) => (
-                      <div key={`empty-${i}`} aria-hidden="true" style={{
-                        width: 7, height: 7, borderRadius: 2,
-                        background: "rgba(255,255,255,0.04)",
-                      }} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
           </div>
           );
         })()}
