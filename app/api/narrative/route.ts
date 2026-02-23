@@ -48,9 +48,23 @@ RULES FOR JUDGING — be fair, reward creativity:
 - An action that ignores the situation entirely should have mostly negative effects (-5 to -10 each).
 - A thoughtful, creative action addressing the problem should have a clear positive (+8 to +15) on the most relevant dimension, with realistic costs elsewhere.
 
-Return ONLY a JSON object with five fields — four numbers and a verdict. The verdict is one short sentence (under 10 words) — a pithy judgment of their move. Like a mentor's aside. Examples: "Bold. The board noticed.", "That's a band-aid, not a fix.", "Creative — but it'll cost you sleep."
+Return ONLY a JSON object with five fields — four numbers and a verdict.
 
-{"company": X, "relationships": X, "energy": X, "integrity": X, "verdict": "your one-liner"}`;
+The verdict MUST explain the CAUSE AND EFFECT of their action in under 15 words. The player needs to understand WHY their move helped or hurt. Be specific about what happened as a result.
+
+Good verdicts (explain cause→effect):
+- "Hiring externally calmed investors but your team felt passed over."
+- "The pivot bought time, but you burned two weeks of momentum."
+- "Transparency won the team's trust. The board didn't love the honesty."
+- "That solved nothing. The real problem got worse while you stalled."
+- "Going direct to customers bypassed the sales team. Elena noticed."
+
+Bad verdicts (too vague, no cause→effect):
+- "Bold. The board noticed." ← noticed WHAT?
+- "Creative — but it'll cost you." ← cost me HOW?
+- "Risky move." ← WHY is it risky?
+
+{"company": X, "relationships": X, "energy": X, "integrity": X, "verdict": "cause and effect in under 15 words"}`;
 }
 
 function buildEndgamePrompt(ending: { type: string; line: string }, companyName: string, decisions: { week: number; context: string; choice: string }[], dims: { company: number; relationships: number; energy: number; integrity: number }): string {

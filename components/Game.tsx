@@ -61,6 +61,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
   const [peakShown, setPeakShown] = useState(false);
   const [selectedDot, setSelectedDot] = useState<number | null>(null);
   const [customOutcome, setCustomOutcome] = useState<{ effects: Partial<GameDimensions>; wasCustom: boolean; verdict?: string } | null>(null);
+  const [choiceImpact, setChoiceImpact] = useState<{ deltas: Record<string, number>; choice: string } | null>(null);
   const pendingContinueRef = useRef<(() => void) | null>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const usedTensionsRef = useRef<Set<number>>(new Set());
@@ -283,6 +284,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     setCustomText("");
     setIsFourthWall(!!t.fourthWall);
     setChoicesVisible(false);
+    setChoiceImpact(null);
   };
 
   // --- HANDLE CHOICE ---
@@ -404,6 +406,15 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
         });
       }
     }
+
+    // Track actual dimension changes for feedback display
+    const actualDeltas: Record<string, number> = {
+      company: newDims.company - dims.company,
+      relationships: newDims.relationships - dims.relationships,
+      energy: newDims.energy - dims.energy,
+      integrity: newDims.integrity - dims.integrity,
+    };
+    setChoiceImpact({ deltas: actualDeltas, choice });
 
     // Natural recovery — REMOVED for all players.
     // Every dimension point is earned through choices. No free healing.
@@ -1038,6 +1049,39 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
             }}>
               {narrative}
             </div>
+            {/* Dimension impact — show what changed and why for ALL choices */}
+            {choiceImpact && !customOutcome?.wasCustom && (
+              <div style={{
+                marginTop: 16, paddingTop: 12,
+                borderTop: "1px solid rgba(255,255,255,0.04)",
+                opacity: 0, animation: "fadeUp 0.5s ease 0.6s forwards",
+              }}>
+                <div style={{
+                  display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap",
+                }}>
+                  {([
+                    { key: "company", label: "Company" },
+                    { key: "relationships", label: "People" },
+                    { key: "energy", label: "Energy" },
+                    { key: "integrity", label: "Ethics" },
+                  ]).map(({ key, label }) => {
+                    const val = choiceImpact.deltas[key] || 0;
+                    if (val === 0) return null;
+                    return (
+                      <span key={key} style={{
+                        fontSize: 11,
+                        fontFamily: FONTS.mono,
+                        fontWeight: 500,
+                        color: val > 0 ? "rgba(74,222,128,0.55)" : "rgba(248,113,113,0.55)",
+                        letterSpacing: "0.3px",
+                      }}>
+                        {label} {val > 0 ? `+${val}` : val}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {/* Custom choice feedback — show what the AI decided your move did */}
             {customOutcome && customOutcome.wasCustom && (
               <div style={{
@@ -1539,18 +1583,26 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
                   { label: tension.left, effects: tension.leftEffect },
                   { label: tension.right, effects: tension.rightEffect },
                 ].map((opt, i) => {
-                  // Gut-level cost signal — how a real person would feel about this choice
+                  // Specific cost signal — tells you what you'll gain and what it costs
                   const efx = opt.effects;
-                  const totalNeg = Math.min(0, efx.company) + Math.min(0, efx.relationships) + Math.min(0, efx.energy) + Math.min(0, efx.integrity);
-                  const totalPos = Math.max(0, efx.company) + Math.max(0, efx.relationships) + Math.max(0, efx.energy) + Math.max(0, efx.integrity);
-                  const personalCost = Math.min(0, efx.energy) + Math.min(0, efx.relationships);
+                  const dimLabelsH: Record<string, string> = { company: 'product', relationships: 'people', energy: 'energy', integrity: 'ethics' };
+                  const gains: string[] = [];
+                  const costs: string[] = [];
+                  const dimKeysH = ['company', 'relationships', 'energy', 'integrity'] as const;
+                  for (const k of dimKeysH) {
+                    const v = efx[k];
+                    if (v >= 8) gains.push(dimLabelsH[k]);
+                    else if (v <= -8) costs.push(dimLabelsH[k]);
+                  }
                   let hint = '';
-                  if (totalNeg > -5) hint = 'safe bet';
-                  else if (personalCost < -15) hint = 'this will cost you';
-                  else if (totalNeg < -25) hint = 'risky';
-                  else if (totalPos > 10 && totalNeg < -10) hint = 'big swing';
-                  else if (efx.integrity < -10) hint = 'you\u2019ll know';
-                  // No hint for ambiguous middle-ground choices — that IS the skill
+                  if (gains.length > 0 && costs.length > 0) {
+                    hint = `+${gains[0]}, −${costs[0]}`;
+                  } else if (costs.length > 0) {
+                    hint = `costs ${costs.join(' & ')}`;
+                  } else if (gains.length > 0) {
+                    hint = `helps ${gains[0]}`;
+                  }
+                  // No hint for ambiguous/small-effect choices — that IS the skill
 
                   return (
                     <button
