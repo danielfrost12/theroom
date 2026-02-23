@@ -531,62 +531,155 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
         display: "flex", flexDirection: "column",
       }}>
 
-        {/* Progress Heartbeat — 24 bars. Not dots. An EKG of your company.
-            Height varies by week intensity. Act breaks create breathing room.
-            The current bar pulses at the tempo of your stress. */}
-        <div
-          aria-label={`Week ${week} of 24`}
-          style={{
-            display: "flex", alignItems: "flex-end", justifyContent: "center",
-            gap: 2,
-            marginBottom: 10,
-            height: 20,
-            padding: "0 4px",
-          }}
-        >
-          {Array.from({ length: 24 }).map((_, i) => {
+        {/* Lifeline — an SVG waveform of your company's life.
+            Not bars, not dots. A continuous line that rises and falls.
+            Ive: "You should feel time running out, not count bars."
+            Dye: "The shape tells the story at a glance." */}
+        {(() => {
+          const svgW = 280;
+          const svgH = 28;
+          const pad = 4;
+          const usableW = svgW - pad * 2;
+          const stepX = usableW / 23; // 24 points, 23 gaps
+          const baseY = svgH - 4; // bottom baseline
+          const topY = 4;         // max peak
+
+          // Build y-values for each week
+          const points: { x: number; y: number; color: string; filled: boolean; current: boolean }[] = [];
+          for (let i = 0; i < 24; i++) {
+            const x = pad + i * stepX;
             const isFilled = i < weekLog.length;
             const isCurrent = i === weekLog.length;
-            const isFuture = i > weekLog.length;
-            const isActBreak = i === 7 || i === 17; // gaps between acts
 
-            // Height varies by what happened — dramatic weeks spike
-            let height = 5; // base
+            let y = baseY - 2; // default: barely above baseline
+            let color = "rgba(255,255,255,0.06)";
+
             if (isFilled) {
               const emoji = weekLog[i];
-              if (emoji === "💀") height = 16;       // death spike
-              else if (emoji === "🏆") height = 14;   // triumph spike
-              else if (emoji === "🟥") height = 11;   // bad week — taller
-              else if (emoji === "🟨") height = 7;    // neutral
-              else height = 5 + (i % 3);                  // good weeks — low, calm, slight variation
+              if (emoji === "💀") { y = topY; color = "rgba(248,113,113,0.9)"; }
+              else if (emoji === "🏆") { y = topY + 3; color = "rgba(250,204,21,0.85)"; }
+              else if (emoji === "🟥") { y = topY + 8; color = "rgba(248,113,113,0.6)"; }
+              else if (emoji === "🟨") { y = baseY - 8; color = "rgba(253,224,71,0.55)"; }
+              else { y = baseY - 4 - (i % 3) * 2; color = "rgba(134,239,172,0.5)"; }
             } else if (isCurrent) {
-              // Current bar pulses — height based on overall tension
               const minDim = Math.min(dims.company, dims.relationships, dims.energy, dims.integrity);
-              height = minDim < 30 ? 14 : minDim < 50 ? 10 : 6;
-            } else {
-              height = 3; // future — barely there
+              y = minDim < 30 ? topY + 2 : minDim < 50 ? topY + 10 : baseY - 6;
+              color = "rgba(255,238,210,0.6)";
             }
 
-            return (
-              <div key={i} style={{
-                width: 4,
-                height,
-                borderRadius: 1,
-                background: isFilled
-                  ? weekDotColor(weekLog[i])
-                  : isCurrent
-                    ? "rgba(255,238,210,0.5)"
-                    : "rgba(255,255,255,0.04)",
-                transition: "all 0.6s ease",
-                animation: isCurrent
-                  ? `pulse ${dims.energy < 30 ? '1s' : dims.energy < 50 ? '1.8s' : '2.5s'} infinite`
-                  : "none",
-                opacity: isFuture ? 0.5 : 1,
-                marginRight: isActBreak ? 6 : 0, // breathing room at act transitions
-              }} />
-            );
-          })}
-        </div>
+            points.push({ x, y, color, filled: isFilled, current: isCurrent });
+          }
+
+          // Build smooth path through filled + current points
+          const filledPoints = points.filter(p => p.filled || p.current);
+          let pathD = "";
+          if (filledPoints.length > 0) {
+            pathD = `M ${filledPoints[0].x} ${filledPoints[0].y}`;
+            for (let i = 1; i < filledPoints.length; i++) {
+              const prev = filledPoints[i - 1];
+              const curr = filledPoints[i];
+              const cpx = (prev.x + curr.x) / 2;
+              pathD += ` C ${cpx} ${prev.y}, ${cpx} ${curr.y}, ${curr.x} ${curr.y}`;
+            }
+          }
+
+          // Future: a dashed baseline
+          const futurePoints = points.filter(p => !p.filled && !p.current);
+          let futurePath = "";
+          if (futurePoints.length > 0) {
+            const startPt = points.find(p => p.current) || filledPoints[filledPoints.length - 1];
+            if (startPt) {
+              futurePath = `M ${startPt.x} ${baseY - 2}`;
+              futurePoints.forEach(p => { futurePath += ` L ${p.x} ${baseY - 2}`; });
+            }
+          }
+
+          // Current week glow
+          const currentPt = points.find(p => p.current);
+
+          return (
+            <div
+              aria-label={`Week ${week} of 24`}
+              style={{ marginBottom: 10, display: "flex", justifyContent: "center" }}
+            >
+              <svg
+                width={svgW} height={svgH}
+                viewBox={`0 0 ${svgW} ${svgH}`}
+                style={{ overflow: "visible" }}
+              >
+                {/* Future path — dashed, ghostly */}
+                {futurePath && (
+                  <path
+                    d={futurePath}
+                    fill="none"
+                    stroke="rgba(255,255,255,0.06)"
+                    strokeWidth={1}
+                    strokeDasharray="3 4"
+                  />
+                )}
+
+                {/* Lifeline — the story so far */}
+                {pathD && (
+                  <path
+                    d={pathD}
+                    fill="none"
+                    stroke="rgba(255,238,210,0.25)"
+                    strokeWidth={1.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                )}
+
+                {/* Week dots — only for dramatic weeks */}
+                {points.filter(p => p.filled).map((p, i) => {
+                  const emoji = weekLog[i];
+                  const isDramatic = emoji === "💀" || emoji === "🏆" || emoji === "🟥";
+                  if (!isDramatic) return null;
+                  return (
+                    <circle
+                      key={i}
+                      cx={p.x} cy={p.y}
+                      r={emoji === "💀" || emoji === "🏆" ? 2.5 : 1.5}
+                      fill={p.color}
+                    />
+                  );
+                })}
+
+                {/* Current week — breathing dot */}
+                {currentPt && (
+                  <>
+                    <circle
+                      cx={currentPt.x} cy={currentPt.y}
+                      r={4}
+                      fill="rgba(255,238,210,0.08)"
+                      style={{ animation: `pulse ${dims.energy < 30 ? '1s' : dims.energy < 50 ? '1.8s' : '2.5s'} infinite` }}
+                    />
+                    <circle
+                      cx={currentPt.x} cy={currentPt.y}
+                      r={2}
+                      fill="rgba(255,238,210,0.6)"
+                      style={{ animation: `pulse ${dims.energy < 30 ? '1s' : dims.energy < 50 ? '1.8s' : '2.5s'} infinite` }}
+                    />
+                  </>
+                )}
+
+                {/* Act dividers — subtle vertical lines */}
+                {[7, 17].map(actWeek => {
+                  const x = pad + actWeek * stepX;
+                  return (
+                    <line
+                      key={actWeek}
+                      x1={x} y1={topY - 1}
+                      x2={x} y2={baseY + 1}
+                      stroke="rgba(255,255,255,0.04)"
+                      strokeWidth={1}
+                    />
+                  );
+                })}
+              </svg>
+            </div>
+          );
+        })()}
 
         {/* Dashboard — dissolves by act, hidden during fourth-wall moments */}
         {!compressing && !surpriseEvent && !isFourthWall && (() => {
