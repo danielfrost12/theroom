@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FONTS, COLORS } from '@/lib/game/constants';
+import { getLastPlay } from '@/lib/game/stats';
 import { SceneBackground } from './SceneBackground';
 
 interface CinematicOpeningProps {
@@ -15,6 +16,29 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
   const [choiceMade, setChoiceMade] = useState<string | null>(null);
   const [showNameInput, setShowNameInput] = useState(false);
   const [companyName, setCompanyName] = useState("");
+  const [ghost] = useState(() => getLastPlay());
+
+  // The ambient text changes based on how your last game ended
+  const ambientText = (() => {
+    if (!ghost) return "Morning light through the window. Your laptop is open. Coffee\u2019s going cold.";
+    switch (ghost.ending) {
+      case 'burnout':
+        return "Morning light through the window. You\u2019ve been here before. Your body remembers, even if you don\u2019t want it to.";
+      case 'bankrupt':
+        return "Morning light through the window. New office. New number in the bank. Same feeling in your chest.";
+      case 'disgraced':
+        return "Morning light through the window. This time you promised yourself: no shortcuts. We\u2019ll see.";
+      case 'board_removed':
+        return "Morning light through the window. This time, nobody can take it from you. Not yet.";
+      case 'forced_sale':
+        return "Morning light through the window. Last time someone else decided when it ended. Not this time.";
+      case 'ipo':
+      case 'acquired':
+        return "Morning light through the window. You\u2019ve done this before. Made it, even. The question is whether you can do it without losing what you lost last time.";
+      default:
+        return "Morning light through the window. Again. Different company, same chair, same light.";
+    }
+  })();
 
   const slackMsg = "Marcus just Slacked the team: the competitor shipped your exact feature. It's live. 12 people are waiting for direction. David has a board call in 3 hours.";
 
@@ -103,7 +127,7 @@ export function CinematicOpening({ onComplete }: CinematicOpeningProps) {
               maxWidth: 400,
               lineHeight: 1.6,
             }}>
-              Morning light through the window. Your laptop is open. Coffee&apos;s going cold.
+              {ambientText}
             </div>
           </div>
         )}

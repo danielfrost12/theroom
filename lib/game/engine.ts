@@ -1,5 +1,6 @@
-import { GameDimensions, Ending, IndexedTension, Decision } from './types';
+import { GameDimensions, Ending, IndexedTension, Decision, TensionEffect } from './types';
 import { TENSIONS, BREATHING_MOMENTS, COMPRESSION_LINES } from './constants';
+import type { PlayRecord } from './stats';
 
 // --- 3-ACT STRUCTURE ---
 // 24 weeks. Each decision is ~4% of the game. You feel every one.
@@ -463,7 +464,107 @@ export function getCompressionLine(dims: GameDimensions, week: number, arr: numb
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-export function getTension(week: number, usedIndices: Set<number>, dims?: GameDimensions, cash?: number, pastChoices?: string[], archetypeBias?: Record<string, number>): IndexedTension {
+// --- GHOST TENSIONS ---
+// Your last game haunts this one. These tensions reference your actual history.
+// They fire once in Act 2 and once in Act 3 — two moments where the game remembers.
+
+function buildGhostTension(ghost: PlayRecord, week: number, dims: GameDimensions): IndexedTension | null {
+  const act = getAct(week);
+  if (act === 1) return null; // Let them settle in first
+
+  const lastChoice = ghost.keyChoices?.[ghost.keyChoices.length - 1];
+  const lastCompany = ghost.companyName || 'your last company';
+  const weakDim = ghost.weakestDim || 'energy';
+
+  const weakDimLabel: Record<string, string> = {
+    company: 'the product',
+    relationships: 'the people around you',
+    energy: 'yourself',
+    integrity: 'the truth',
+  };
+
+  // The effect: choosing "differently" boosts what killed you last time,
+  // choosing "the same" gives a small comfort bonus but repeats the pattern
+  const boostKey = weakDim as keyof TensionEffect;
+  const repeatEffect: TensionEffect = { company: 2, relationships: 2, energy: 5, integrity: 0 };
+  const changeEffect: TensionEffect = { company: -3, relationships: -3, energy: -3, integrity: 3 };
+  changeEffect[boostKey] = 12;   // Big boost to what killed you
+  repeatEffect[boostKey] = -5;   // Keeps the pattern going
+
+  if (act === 2 && ghost.ending === 'burnout') {
+    return {
+      idx: -100, // Ghost index — never conflicts with real tensions
+      context: `It's late. You've been here before — not this office, but this moment. ${lastCompany} ended the same way. You kept pushing. You know exactly what happens next.`,
+      left: "Slow down this time",
+      right: lastChoice || "Push through",
+      leftEffect: changeEffect,
+      rightEffect: repeatEffect,
+      category: 'ghost',
+      interiority: `Last time, you lost ${weakDimLabel[weakDim] || 'everything'}.`,
+      format: 'observation',
+    };
+  }
+
+  if (act === 2 && ghost.ending === 'disgraced') {
+    return {
+      idx: -100,
+      context: `A shortcut presents itself. Familiar. The kind of shortcut that saved ${lastCompany} for three weeks before it destroyed everything.`,
+      left: "Do it differently",
+      right: "Take the shortcut",
+      leftEffect: changeEffect,
+      rightEffect: repeatEffect,
+      category: 'ghost',
+      interiority: "You've made this exact choice before.",
+      format: 'intimate',
+    };
+  }
+
+  if (act === 2 && (ghost.ending === 'bankrupt' || ghost.ending === 'forced_sale')) {
+    return {
+      idx: -100,
+      context: `The numbers look familiar. Not the specific numbers — the shape of them. The same downward curve you watched at ${lastCompany} before it was too late.`,
+      left: "Act now",
+      right: "Wait and see",
+      leftEffect: changeEffect,
+      rightEffect: repeatEffect,
+      category: 'ghost',
+      interiority: "You recognize this feeling.",
+      format: 'observation',
+    };
+  }
+
+  if (act === 3) {
+    // Act 3 ghost: regardless of last ending, the game asks if you've changed
+    const wasSuccess = ghost.ending === 'ipo' || ghost.ending === 'acquired';
+    return {
+      idx: -101,
+      context: wasSuccess
+        ? `You made it once before. ${lastCompany} was the proof. But you're not the same person who built that. The question isn't whether you can do it again. It's whether you should do it the same way.`
+        : `${lastCompany} taught you something. Maybe it was what not to sacrifice. Maybe it was who not to trust. Whatever it was — this is the moment where you find out if you learned it.`,
+      left: wasSuccess ? "Trust the old playbook" : "Try something new",
+      right: wasSuccess ? "Reinvent" : "Trust your instincts",
+      leftEffect: wasSuccess ? repeatEffect : changeEffect,
+      rightEffect: wasSuccess ? changeEffect : repeatEffect,
+      category: 'ghost',
+      interiority: wasSuccess
+        ? `Last time ended at $${ghost.valuation}M. That number means something.`
+        : `Last time ended in ${ghost.endingLabel.toLowerCase()}. That memory means something.`,
+      format: 'intimate',
+      fourthWall: true,
+    };
+  }
+
+  return null;
+}
+
+export function getTension(week: number, usedIndices: Set<number>, dims?: GameDimensions, cash?: number, pastChoices?: string[], archetypeBias?: Record<string, number>, ghost?: PlayRecord | null): IndexedTension {
+  // Ghost tension — your last game talks to you (once in Act 2 around week 11-13, once in Act 3 around week 19-21)
+  const ghostWeeks = [11, 12, 13, 19, 20, 21];
+  if (ghost && dims && ghostWeeks.includes(week) && !usedIndices.has(-100) && !usedIndices.has(-101)) {
+    const ghostT = buildGhostTension(ghost, week, dims);
+    if (ghostT) return ghostT;
+  }
+
   const choiceSet = new Set(pastChoices || []);
 
   // Filter: remove tensions whose `requires` hasn't been met, and keep ones that have

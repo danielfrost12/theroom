@@ -7,6 +7,10 @@ export interface PlayRecord {
   valuation: number;
   archetype?: string;
   date: number;        // timestamp
+  // Ghost data — choices the game can reference in future playthroughs
+  keyChoices?: string[];  // up to 5 most important choices (labels)
+  weakestDim?: string;    // the dimension that killed you or was lowest
+  companyName?: string;   // what you named the company
 }
 
 const HISTORY_KEY = 'theroom_history';
@@ -56,6 +60,13 @@ export function getBestPlay(): PlayRecord | null {
   const history = readHistory();
   if (history.length === 0) return null;
   return history.reduce((best, cur) => cur.valuation > best.valuation ? cur : best);
+}
+
+// The ghost — your most recent completed game, used to haunt the next one
+export function getLastPlay(): PlayRecord | null {
+  const history = readHistory();
+  if (history.length === 0) return null;
+  return history[history.length - 1];
 }
 
 // Rank = position among your own plays (1 = best)

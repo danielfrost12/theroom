@@ -27,8 +27,16 @@ export function Endgame({ ending, arr, dims, decisions, weekLog, pivotalMoments,
   const { rank, total } = getRank(valuation);
   const archetype = detectArchetype(dims, decisions, weekLog.length);
 
-  // Save play record to localStorage on mount
+  // Save play record to localStorage on mount — includes ghost data for future playthroughs
   useEffect(() => {
+    const dimEntries = [
+      { key: 'company', val: dims.company },
+      { key: 'relationships', val: dims.relationships },
+      { key: 'energy', val: dims.energy },
+      { key: 'integrity', val: dims.integrity },
+    ];
+    const weakest = dimEntries.reduce((a, b) => a.val < b.val ? a : b);
+
     savePlayRecord({
       ending: ending.type,
       endingLabel: ending.label,
@@ -36,6 +44,9 @@ export function Endgame({ ending, arr, dims, decisions, weekLog, pivotalMoments,
       valuation,
       archetype,
       date: Date.now(),
+      keyChoices: decisions.slice(-5).map(d => d.choice),
+      weakestDim: weakest.key,
+      companyName,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -5,6 +5,7 @@ import { FONTS, COLORS, TEMPO, getActTempo, shouldEarnSilence, getDashboardVisib
 import { GameDimensions, Ending, Decision, IndexedTension, TensionFormat } from '@/lib/game/types';
 import { getSceneForState, getBreathingMoment, getCompressionLine, getAct, getTension, checkEnding, checkSurpriseEvent, checkMilestone, getTensionStakes, detectArchetype, getArchetypeBias, getArchetypeMirror, getEndingLastLine, type SurpriseEvent, type Milestone, type TensionStakes } from '@/lib/game/engine';
 import { generateNarrative } from '@/lib/ai/narrative';
+import { getLastPlay } from '@/lib/game/stats';
 import { SceneBackground } from './SceneBackground';
 import { DimBar } from './DimBar';
 
@@ -87,10 +88,13 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
     }, delay + 3500); // Last line holds for 3.5 seconds, then endgame
   };
 
+  // The ghost — your last playthrough, used to haunt this one
+  const [ghost] = useState(() => getLastPlay());
+
   // Get initial tension
   useEffect(() => {
     const pastChoices = decisions.map(d => d.choice);
-    const t = getTension(week, usedTensions, dims, cash, pastChoices, archetypeBias);
+    const t = getTension(week, usedTensions, dims, cash, pastChoices, archetypeBias, ghost);
     setTension(t);
     setIsConsequence(!!t.requires);
     setStakes(getTensionStakes(t, dims));
@@ -238,7 +242,7 @@ export function Game({ companyName, firstChoice, onEnd }: GameProps) {
       setArchetypeMirror(null);
     }
 
-    const t = getTension(w, usedTensionsRef.current, d, c, decs.map(dd => dd.choice), archetypeBias);
+    const t = getTension(w, usedTensionsRef.current, d, c, decs.map(dd => dd.choice), archetypeBias, ghost);
     setTension(t);
     setIsConsequence(!!t.requires);
     setStakes(getTensionStakes(t, d));
